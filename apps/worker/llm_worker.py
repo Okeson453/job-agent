@@ -36,6 +36,16 @@ _CONCURRENCY = int(os.environ.get("LLM_WORKER_CONCURRENCY", "3"))
 _MIN_SEMANTIC = int(os.environ.get("SEMANTIC_MATCH_MIN", "50"))
 _MIN_BLENDED = int(os.environ.get("BLENDED_MATCH_MIN", "45"))
 _PROMOTE_DET = int(os.environ.get("MATCH_THRESHOLD", "40"))
+# Default True: promote on deterministic score when LLM is weak/down.
+_STRICT_PROMOTE = os.environ.get("LLM_STRICT_PROMOTE", "1").lower() in ("1", "true", "yes", "on")
+
+
+def _tick():
+    try:
+        from apps.worker.main import mark_tick
+        mark_tick("llm")
+    except Exception:
+        pass
 
 
 def _qualify(match_result, blended: int, deterministic: int | None) -> bool:
@@ -61,6 +71,7 @@ async def _promote(db, job, row, job_id: str, reason: str, score: int) -> None:
 
 
 async def _process(job_id: str) -> None:
+    _tick()
     with span("matching.semantic", attributes={"job_id": job_id}):
         async with get_session() as db:
             result = await db.execute(select(Job).where(Job.id == uuid.UUID(job_id)))
@@ -96,8 +107,7 @@ async def _process(job_id: str) -> None:
                 await _promote(db, job, row, job_id, f"auto_review_apply score={score}", score)
                 return
 
-            # LLM down or weak semantic: still apply if deterministic cleared threshold
-            if det >= _PROMOTE_DET:
+            if _STRICT_PROMOTE and det >= _PROMOTE_DET:
                 await _promote(
                     db, job, row, job_id, f"deterministic_promote score={det}", det
                 )
