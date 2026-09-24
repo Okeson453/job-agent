@@ -11,7 +11,7 @@ from sqlalchemy import select
 from src.candidate.profile.service import get_profile, load_min_match_score
 from src.database.session import get_session
 from src.jobs.job_state import set_job_state
-from src.jobs.matcher.deterministic import score
+from src.jobs.matcher.deterministic import hard_filter_reason, score
 from src.jobs.models import Job, JobMatch
 from src.observability.logging import get_logger
 from src.observability.tracing import span
@@ -43,6 +43,22 @@ async def _process(job_id: str) -> None:
                 return
 
             set_job_state(job, "NORMALIZED", reason="matching_start")
+
+            # Hard policy: contract + remote/WFH only — never full-time.
+            reject = hard_filter_reason(job)
+            if reject:
+                set_job_state(job, "REJECTED_BY_FILTER", reason=reject)
+                await db.commit()
+                logger.info(
+                    "matching.hard_filter",
+                    job_id=job_id,
+                    reason=reject,
+                    title=job.title,
+                    employment_type=job.employment_type,
+                    remote=job.remote,
+                )
+                return
+
             profile = await get_profile(db)
             deterministic = score(job, profile)
 
@@ -84,7 +100,6 @@ async def run_matching_loop() -> None:
         if await is_system_paused():
             await asyncio.sleep(2)
             continue
-        # Bound in-flight tasks to concurrency
         while len(active) >= _CONCURRENCY:
             done, active = await asyncio.wait(active, return_when=asyncio.FIRST_COMPLETED)
             active = set(active)
