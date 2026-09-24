@@ -102,27 +102,10 @@ async def _process(job_id: str) -> None:
                         validated=answered.validated,
                     )
                 )
-                if answered.source == "manual" and not answered.answer:
+                if answered.source == "missing" or not answered.validated:
                     missing_required = True
 
-            await sm.advance(app.id, db, to_state=sm.FACT_VALIDATION)
-
-            if missing_required:
-                await sm.advance(
-                    app.id,
-                    db,
-                    to_state=sm.MISSING_INFORMATION,
-                    detail="hard-excluded question unanswered",
-                    extra={
-                        "cv_profile_name": cv_name,
-                        "cover_letter": letter or None,
-                        "failure_reason": "missing_required_answer",
-                    },
-                )
-                await db.commit()
-                return
-
-            if not validated or not letter:
+            if not validated or not letter or missing_required:
                 await sm.advance(
                     app.id,
                     db,
@@ -156,6 +139,16 @@ async def _process(job_id: str) -> None:
                 },
             )
             await db.commit()
+
+            # Always notify Telegram with full job details before/with apply.
+            await push(
+                NOTIFICATION_QUEUE,
+                {
+                    "type": "applying",
+                    "application_id": str(app.id),
+                    "job_id": job_id,
+                },
+            )
 
             if mode == "AUTO":
                 await sm.advance(app.id, db, to_state=sm.SUBMISSION)
