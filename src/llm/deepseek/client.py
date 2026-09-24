@@ -10,6 +10,7 @@ import asyncio
 import os
 import json
 import random
+import time
 from typing import TypeVar
 
 import httpx
@@ -19,6 +20,30 @@ from src.observability.logging import get_logger
 from src.security.secrets import get_secret
 
 logger = get_logger(__name__)
+
+# After a 402 Insufficient Balance, skip outbound LLM calls for a cool-down
+# so we do not spam DeepSeek or stall the queue with guaranteed failures.
+_BALANCE_CIRCUIT_UNTIL = 0.0
+_BALANCE_COOLDOWN_SEC = float(os.environ.get("DEEPSEEK_BALANCE_COOLDOWN_SEC", "900"))
+
+
+class DeepSeekBalanceError(RuntimeError):
+    """Raised when the DeepSeek account has insufficient balance (HTTP 402)."""
+
+
+def balance_circuit_open() -> bool:
+    return time.monotonic() < _BALANCE_CIRCUIT_UNTIL
+
+
+def _trip_balance_circuit() -> None:
+    global _BALANCE_CIRCUIT_UNTIL
+    _BALANCE_CIRCUIT_UNTIL = time.monotonic() + _BALANCE_COOLDOWN_SEC
+    logger.error(
+        "deepseek.insufficient_balance",
+        cooldown_sec=_BALANCE_COOLDOWN_SEC,
+        hint="Top up the DeepSeek account; semantic matching paused until cooldown ends",
+    )
+
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -61,6 +86,11 @@ class DeepSeekClient:
         If response_schema is given, validates and retries once on failure
         before raising.
         """
+        if balance_circuit_open():
+            raise DeepSeekBalanceError(
+                "DeepSeek balance circuit open — top up account or wait for cooldown"
+            )
+
         last_error: Exception | None = None
 
         for attempt in range(self._max_retries + 1):
@@ -77,7 +107,10 @@ class DeepSeekClient:
             except httpx.HTTPStatusError as exc:
                 last_error = exc
                 status = exc.response.status_code if exc.response is not None else 0
-                # Retry only transient failures: 429 and 5xx. Never retry 401/403.
+                if status == 402:
+                    _trip_balance_circuit()
+                    break
+                # Retry only transient failures: 429 and 5xx. Never retry 401/403/402.
                 if status < 500 and status != 429:
                     break
                 if attempt >= self._max_retries:
@@ -93,7 +126,6 @@ class DeepSeekClient:
             except ValidationError as exc:
                 last_error = exc
                 if attempt >= 1:
-                    # Only one schema-retry.
                     break
                 logger.warning("deepseek.schema_retry", error=str(exc))
                 await asyncio.sleep(0.5)
@@ -119,46 +151,25 @@ class DeepSeekClient:
             "temperature": temperature,
             "max_tokens": max_tokens,
         }
-        url = f"{self._endpoint.rstrip('/')}/chat/completions"
-        timeout = httpx.Timeout(self._timeout, connect=10.0)
-
-        if not hasattr(self, "_http") or self._http is None:
-            self._http = httpx.AsyncClient(timeout=timeout)
-        resp = await self._http.post(url, headers=headers, json=body)
-        if resp.status_code >= 500:
+        url = self._endpoint.rstrip("/") + "/chat/completions"
+        async with httpx.AsyncClient(timeout=self._timeout) as client:
+            resp = await client.post(url, headers=headers, json=body)
+            if resp.status_code >= 400:
+                logger.error(
+                    "deepseek.client_error",
+                    status=resp.status_code,
+                    body=resp.text[:500],
+                )
             resp.raise_for_status()
-        if resp.status_code >= 400:
-            logger.error(
-                "deepseek.client_error",
-                status=resp.status_code,
-                body=resp.text[:300],
-            )
-            resp.raise_for_status()
-
-        data = resp.json()
-        choices = data.get("choices") or []
-        if not choices:
-            raise ValueError("DeepSeek response contained no choices")
-        content = choices[0].get("message", {}).get("content", "")
-        return str(content)
+            data = resp.json()
+            return data["choices"][0]["message"]["content"]
 
     def _parse_schema(self, raw: str, schema: type[T]) -> T:
-        """Extract JSON from the model response and validate against *schema*."""
         text = raw.strip()
-        # Strip markdown code fences if present.
         if text.startswith("```"):
             lines = text.split("\n")
-            lines = [ln for ln in lines if not ln.strip().startswith("```")]
-            text = "\n".join(lines).strip()
-
-        # Find the outermost JSON object/array.
-        start = text.find("{")
-        end = text.rfind("}")
-        if start == -1 or end == -1 or end <= start:
-            start = text.find("[")
-            end = text.rfind("]")
-        if start != -1 and end != -1 and end > start:
-            text = text[start : end + 1]
-
-        data = json.loads(text)
-        return schema.model_validate(data)
+            lines = lines[1:]
+            if lines and lines[-1].strip() == "```":
+                lines = lines[:-1]
+            text = "\n".join(lines)
+        return schema.model_validate_json(text)
