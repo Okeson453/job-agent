@@ -1,10 +1,11 @@
 """Lever public postings API adapter.
 
-Endpoint: https://api.lever.co/v0/postings/{company}?mode=json
+Endpoint: https://api.lever.co/v0/postings/{site}?mode=json
 No authentication required for public postings.
 
-``company`` must be the Lever *site name* (the subdomain on jobs.lever.co),
-not the legal company name. Invalid site names return HTTP 404 from Lever.
+Values in LEVER_COMPANIES must be Lever *site names*
+(the path segment on https://jobs.lever.co/<site>), not legal company names.
+Invalid sites return HTTP 404 from Lever.
 """
 
 from __future__ import annotations
@@ -20,9 +21,55 @@ from src.observability.logging import get_logger
 
 logger = get_logger(__name__)
 
-# Public site names known to respond on api.lever.co (verified).
-# Shopify/Netflix are NOT valid Lever site names for the public postings API.
+# Verified public sites that respond on api.lever.co with job lists.
 _DEFAULT_COMPANIES = ["palantir", "spotify"]
+
+# Common misconfigurations: company brand names that are NOT Lever site names.
+_KNOWN_INVALID_SITES = frozenset(
+    {
+        "shopify",
+        "netflix",
+        "stripe",
+        "airbnb",
+        "google",
+        "meta",
+        "facebook",
+        "amazon",
+        "apple",
+        "microsoft",
+    }
+)
+
+
+def _resolve_companies(raw: list[str] | None) -> list[str]:
+    """Return usable Lever site names, falling back when env is misconfigured."""
+    if raw is None:
+        env = os.environ.get("LEVER_COMPANIES", "")
+        raw = [c.strip() for c in env.split(",") if c.strip()] if env else []
+
+    cleaned = [c.lower().strip() for c in raw if c and c.strip()]
+    if not cleaned:
+        return list(_DEFAULT_COMPANIES)
+
+    invalid = [c for c in cleaned if c in _KNOWN_INVALID_SITES]
+    valid = [c for c in cleaned if c not in _KNOWN_INVALID_SITES]
+
+    if invalid:
+        logger.warning(
+            "lever.config.invalid_sites_dropped",
+            dropped=invalid,
+            hint="Use Lever site names from jobs.lever.co/<site>, not brand names",
+        )
+
+    if not valid:
+        logger.warning(
+            "lever.config.fallback_defaults",
+            reason="no_valid_sites_in_LEVER_COMPANIES",
+            defaults=_DEFAULT_COMPANIES,
+        )
+        return list(_DEFAULT_COMPANIES)
+
+    return valid
 
 
 class LeverAdapter(JobSource):
@@ -31,15 +78,7 @@ class LeverAdapter(JobSource):
     rate_limit_per_minute = 20
 
     def __init__(self, companies: list[str] | None = None) -> None:
-        if companies is not None:
-            self._companies = companies
-        else:
-            env = os.environ.get("LEVER_COMPANIES", "")
-            self._companies = (
-                [c.strip() for c in env.split(",") if c.strip()]
-                if env
-                else list(_DEFAULT_COMPANIES)
-            )
+        self._companies = _resolve_companies(companies)
 
     async def discover(self) -> list[dict[str, Any]]:
         await self._acquire_rate_limit()
