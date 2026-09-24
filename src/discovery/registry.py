@@ -1,7 +1,7 @@
 """Source registry — the single place that decides which sources are active.
 
 discovery_worker iterates this dict; it never imports individual adapters
-directly.
+directly. All sources are zero-credential public feeds or browser listings.
 """
 
 from __future__ import annotations
@@ -42,22 +42,52 @@ def get_sources() -> dict[str, JobSource]:
 
         sources["lever"] = LeverAdapter()
 
+    if _env_flag("DISCOVERY_REMOTEOK_ENABLED", default=True):
+        from src.discovery.remoteok.adapter import RemoteOKAdapter
+
+        sources["remoteok"] = RemoteOKAdapter()
+
+    if _env_flag("DISCOVERY_HIMALAYAS_ENABLED", default=True):
+        from src.discovery.himalayas.adapter import HimalayasAdapter
+
+        sources["himalayas"] = HimalayasAdapter()
+
+    if _env_flag("DISCOVERY_WELLFOUND_ENABLED", default=True):
+        from src.discovery.wellfound.adapter import WellfoundAdapter
+
+        sources["wellfound"] = WellfoundAdapter()
+
+    if _env_flag("DISCOVERY_YC_ENABLED", default=True):
+        from src.discovery.yc.adapter import YCAdapter
+
+        sources["yc"] = YCAdapter()
+
+    if _env_flag("DISCOVERY_LINKEDIN_ENABLED", default=True):
+        from src.discovery.linkedin.adapter import LinkedInAdapter
+
+        sources["linkedin"] = LinkedInAdapter()
+
     if _env_flag("DISCOVERY_INDEED_ENABLED", default=True):
         from src.discovery.indeed.adapter import IndeedAdapter
 
         sources["indeed"] = IndeedAdapter()
 
-    if _env_flag("DISCOVERY_LINKEDIN_ENABLED", default=False):
-        from src.discovery.linkedin.adapter import LinkedInAdapter
+    if _env_flag("DISCOVERY_OTTA_ENABLED", default=True):
+        from src.discovery.otta.adapter import OttaAdapter
 
-        sources["linkedin"] = LinkedInAdapter()
+        sources["otta"] = OttaAdapter()
 
-    if _env_flag("DISCOVERY_WELLFOUND_ENABLED", default=False):
-        from src.discovery.wellfound.adapter import WellfoundAdapter
+    if _env_flag("DISCOVERY_ARC_ENABLED", default=True):
+        from src.discovery.arc.adapter import ArcAdapter
 
-        sources["wellfound"] = WellfoundAdapter()
+        sources["arc"] = ArcAdapter()
 
-    if _env_flag("DISCOVERY_COMPANY_CAREER_ENABLED", default=False):
+    if _env_flag("DISCOVERY_CONTRA_ENABLED", default=True):
+        from src.discovery.contra.adapter import ContraAdapter
+
+        sources["contra"] = ContraAdapter()
+
+    if _env_flag("DISCOVERY_COMPANY_CAREER_ENABLED", default=True):
         from src.discovery.company_career.adapter import CompanyCareerAdapter
 
         sources["company_career"] = CompanyCareerAdapter()
