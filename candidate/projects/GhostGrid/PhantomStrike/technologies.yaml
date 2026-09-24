@@ -1,0 +1,9 @@
+execution_abstraction:
+  - "MT5Gateway (production)"
+  - "WebSocketGateway (non-MT5 brokers)"
+  - "SimulationGateway (in-memory, tunable latency/slippage/requote rate)"
+  - "PaperGateway"
+account: "Cent-denominated MT5 account"
+# NOTE: doc doesn't restate the orchestration stack (likely shares Ghost Grid's
+# Python/asyncio/SQLite base given the shared H_c/campaign-ledger integration —
+# TODO confirm).

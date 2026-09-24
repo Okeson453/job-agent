@@ -1,0 +1,6 @@
+metrics:
+  - {label: "Peer-review flaws addressed in v2", value: 22, unit: "flaws across 4 independent reviews", source: "KAIROS_v2.md"}
+  - {label: "Design axioms", value: 10, unit: "count (up from 7 in v1)", source: "KAIROS_v2.md"}
+  - {label: "Live-deployment gate — paper Sharpe", value: 0.8, unit: "minimum, with P(Sharpe>0.5)>0.80", source: "KAIROS_v2.md"}
+  - {label: "Live-deployment gate — paper trading duration", value: 8, unit: "weeks minimum, across >=2 regime transitions", source: "KAIROS_v2.md"}
+  - {label: "Implementation sequence", value: "Phase 0-10", unit: "phases, weeks 1-28+", source: "KAIROS_v2.md"}

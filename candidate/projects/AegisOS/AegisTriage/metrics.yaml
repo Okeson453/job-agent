@@ -1,0 +1,10 @@
+metrics:
+  - {label: "Alert ingestion throughput", value: 1000000, unit: "EPS sustained", source: "aegistriage-enterprise-design.md"}
+  - {label: "Triage classification latency p95", value: 15, unit: "seconds", source: "aegistriage-enterprise-design.md"}
+  - {label: "Investigation completion latency p90", value: 60, unit: "seconds", source: "aegistriage-enterprise-design.md"}
+  - {label: "Autonomous response execution p99", value: 5, unit: "seconds", source: "aegistriage-enterprise-design.md"}
+  - {label: "Platform availability", value: 99.95, unit: "% uptime", source: "aegistriage-enterprise-design.md"}
+  - {label: "False-positive reduction", value: 85, unit: "% vs raw SIEM (target, min)", source: "aegistriage-enterprise-design.md"}
+  - {label: "MTTR reduction", value: 70, unit: "% vs manual baseline (target, min)", source: "aegistriage-enterprise-design.md"}
+  - {label: "Agent decision audit completeness", value: 100, unit: "%", source: "aegistriage-enterprise-design.md"}
+# NOTE: all values above are DEFINED TARGETS (SLOs set before architecture), not measured results.

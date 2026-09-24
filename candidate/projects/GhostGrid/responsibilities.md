@@ -1,0 +1,3 @@
+# Ghost Grid — Responsibilities
+
+TODO

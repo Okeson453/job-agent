@@ -1,0 +1,3 @@
+# Doc specifies pipeline/math, not an implementation stack directly.
+phase_2_optional: "LightGBM/XGBoost Sweep Classifier (L9, ML confidence weighting) — inherited from UMLDE"
+stack: []   # TODO — no execution/runtime stack stated explicitly beyond the pipeline logic itself

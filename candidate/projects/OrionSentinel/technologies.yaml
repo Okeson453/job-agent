@@ -1,0 +1,13 @@
+platform: "MetaTrader 5, Hedging Account"
+language: "Native MQL5 only — zero DLL imports, zero external libraries, zero raw sockets/WebRequest in the trading path"
+signal_transport: "RAM-resident Global Variable interface between V2 (producer) and v1 (consumer)"
+config_storage: "FILE_COMMON CSVs (tod_matrix, instrument_profiles, time_reference, pillar_weights, rate_caps) — shared across terminal instances"
+instruments: ["XAUUSD", "EURUSD", "GBPUSD", "USDJPY", "US30"]
+v2_modules: ["Types", "Config", "TimeReference", "InstrumentProfile", "ContextTier",
+             "StructuralTrigger", "Pillars/Momentum", "Pillars/Structure", "Pillars/Liquidity",
+             "Pillars/RegimeSession", "DXYAlignment", "Fusion", "ConfirmationGate",
+             "TargetPath", "CostFilter", "RateDiscipline", "SignalCommit", "Logging",
+             "Indicators"]
+validation_scripts: ["cost_filter_calibration_test.mq5", "tod_table_integrity_test.mq5",
+                      "dxy_unavailable_test.mq5", "regime_accuracy_test.mq5",
+                      "confirmation_gate_stress_test.mq5"]

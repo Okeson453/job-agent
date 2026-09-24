@@ -1,0 +1,12 @@
+metrics:
+  - {label: "Lighthouse Performance", value: 96, unit: "score (target >90)", source: "aegisshare-project-description.md"}
+  - {label: "Lighthouse Accessibility", value: 97, unit: "score (target >95)", source: "aegisshare-project-description.md"}
+  - {label: "First Contentful Paint", value: 0.9, unit: "s (target <1.2s)", source: "aegisshare-project-description.md"}
+  - {label: "Largest Contentful Paint", value: 1.6, unit: "s (target <2.0s)", source: "aegisshare-project-description.md"}
+  - {label: "Cumulative Layout Shift", value: 0.02, unit: "(target <0.1)", source: "aegisshare-project-description.md"}
+  - {label: "Time to Interactive", value: 2.4, unit: "s (target <3.0s)", source: "aegisshare-project-description.md"}
+  - {label: "OPA PDP p99 latency", value: 11, unit: "ms (target <15ms)", source: "aegisshare-project-description.md"}
+  - {label: "API Gateway p99 latency", value: 67, unit: "ms (target <100ms)", source: "aegisshare-project-description.md"}
+  - {label: "Audit event write latency", value: 28, unit: "ms (target <50ms)", source: "aegisshare-project-description.md"}
+  - {label: "Platform uptime (30-day)", value: 99.999, unit: "%", source: "aegisshare-project-description.md"}
+# NOTE: source-doc-reported figures ("Current" column) — verify independently before citing as achieved results.

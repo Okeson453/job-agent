@@ -1,0 +1,3 @@
+# Kairos Sovereign — Responsibilities
+
+TODO

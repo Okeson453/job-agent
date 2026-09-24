@@ -1,0 +1,7 @@
+# Platform-level only — see AegisTriage/technologies.yaml and
+# AegisShare/technologies.yaml for each module's own stack.
+shared_infra:
+  - "Single AWS CloudHSM cluster — isolated key hierarchies per platform, one shared audit-signing key"
+  - "Single OPA policy engine spanning both platforms (unified ABAC/RBAC)"
+  - "New cross-platform Kafka topics (aegis.threat.vault-correlation, aegis.evidence.grant-*, aegis.compliance.package-ready, aegis.response.cross-platform, aegis.policy.unified-decision)"
+design_tool: "Figma"

@@ -1,0 +1,4 @@
+# The source doc is architecture/pipeline-agnostic on implementation
+# language/runtime — it specifies modules, data contracts, and math,
+# not a tech stack the way the other trading docs do.
+stack: []   # TODO — confirm intended implementation language/runtime

@@ -1,0 +1,51 @@
+name: "OrionSentinel"
+type: "algorithmic trading system (MQL5, MetaTrader 5)"
+status: "active — V2 packaged as 'OrionSentinel-V2-Ready' with install docs and validation test scripts; v1 Fortress fully specified; both engines' own production-readiness checklists are unchecked (no live/forward-test results yet)"
+role: "Sole developer, team credited as 'Okeson Systems' (source code copyright header)"
+dates:
+  start: null    # TODO — verify
+  end: null
+  current: true
+description: >
+  A two-engine MetaTrader 5 system: OrionSentinel v1 "The Fortress" is a
+  deterministic, fixed-rule capital-management and execution engine; V2
+  "Signal Generation & Transport" is the companion signal side, producing
+  a Composite Conviction Score (CCS) that v1 consumes via a Global
+  Variable interface.
+problem: >
+  Separate signal generation from capital/execution risk so that no
+  upstream signal source can ever directly control money — and make the
+  execution engine's risk rules structurally impossible to bypass rather
+  than merely policy.
+solution: >
+  v1 is the sole capital authority: every proposed trade passes an 8-layer
+  guard stack and is opened as a basket of 2-5 identically-parameterized
+  positions (basket, not position, is the unit of risk). V2 has no
+  execution authority at all — it only ever proposes, via pillar-fusion
+  scoring (Structure/Momentum/Liquidity/RegimeSession + DXY alignment)
+  feeding a graduated confluence score.
+responsibilities:
+  - "Designed and implemented both engines end-to-end: v1's 8-layer guard stack, Constellation basket state machine, and Nexus Ledger persistence; V2's pillar-fusion scoring and Global Variable signal-commit protocol."
+  - "Wrote the 14 non-negotiable design constraints (sole capital authority, Anchor Float never decreases, fixed SL/TP, no recovery/hedging/scale-in, etc.) and enforced them structurally in code, not just as policy."
+  - "Debugged Exness broker symbol-suffix conventions, MQL5 indicator API incompatibilities, CSV config-loading bugs, and Global Variable protocol checksum mismatches across multiple diagnostic cycles."
+  - "Diagnosed a zero-trade-emission issue in backtesting and staged an architectural revision (lowered emission floors, loosened TOD threshold, softened chop compression, widened confirmation-gate tolerance)."
+  - "Built the operational tooling suite (TODMatrixBuilder, AttributionReview, OutcomeTagger, SupplyCapReport) and 5 dedicated validation-protocol test scripts."
+architecture: "See OrionSentinel/architecture.md for the full v1/V2 pipeline diagrams — kept as a linked evidence file rather than duplicated here."
+technologies: "Native MQL5 only, zero DLLs/external libraries/raw sockets — see OrionSentinel/technologies.yaml."
+key_features:
+  - "Basket-as-unit-of-risk model (2-5 identically-parameterized positions open/close together)"
+  - "Conviction-proportional exposure via lookup table, not formula"
+  - "Zero external dependency, structurally enforced (verified by code review)"
+  - "Two-terminal-folder deployment model for multi-instance config sharing"
+  - "Composite Conviction Score (CCS) fusion engine with Schmitt-hysteresis confirmation gating"
+security: "No dedicated security audit — risk containment is the core design goal, not application security in the conventional sense (see the 14 non-negotiables in challenges.md)."
+performance: "No verified live or forward-test results yet — both engines' own production-readiness checklists (4-week demo run + 100+ forward-tested baskets for v1; TOD-matrix calibration period for V2) are unchecked. Do not cite performance numbers until these clear."
+engineering_challenges: "See OrionSentinel/challenges.md — the 14 non-negotiable constraints, and genuinely open items (broker step-size verification, empty tod_matrix.csv on first deploy, commission/slippage must come from real broker statements)."
+outcomes: "Not yet measurable — pre-live-validation stage for both engines."
+repository:
+  available: false
+  url: null   # TODO — you have this locally; add if you want it in the public portfolio
+  visibility: "not_publicly_available"
+live_url: null
+documentation_url: "OrionSentinel_Technical_Design_v1.md, OrionSentinel-V2-Ready.zip (52 files: MQL5 EA + Includes + config + validation-protocol test scripts + install docs)"
+confidentiality: "Proprietary trading system — treat as private unless you decide otherwise."

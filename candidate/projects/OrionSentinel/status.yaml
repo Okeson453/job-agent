@@ -1,0 +1,4 @@
+status: "active — V2 packaged as 'OrionSentinel-V2-Ready' with install docs and validation test scripts; v1 Fortress fully specified"
+last_updated: "2026-07"
+v2_deployment_checklist: "Largely unchecked as of the package — TOD matrix gate provides NO protection until enough candidate-log volume accumulates to run TODMatrixBuilder.mq5 (explicit calibration-period caveat in the doc)"
+v1_production_readiness: "Checklist entirely unchecked in the source doc — includes a required 4-week demo run and 100+ forward-tested baskets before live"

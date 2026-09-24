@@ -1,0 +1,5 @@
+metrics:
+  - {label: "Services", value: 20, unit: "18 Python + 2 Go", source: "SentraAura-Architecture.md"}
+  - {label: "Agents", value: 30, unit: "across 6 domain groups", source: "SentraAura-Architecture.md"}
+  - {label: "Shared packages", value: 12, unit: "count", source: "SentraAura-Architecture.md"}
+  - {label: "Architecture layers", value: 14, unit: "layer decomposition (§2.1)", source: "SentraAura-Architecture.md"}

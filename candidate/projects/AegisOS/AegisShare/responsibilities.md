@@ -1,0 +1,3 @@
+# AegisShare — Responsibilities
+
+TODO

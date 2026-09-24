@@ -1,0 +1,3 @@
+status: "v1.0 master blueprint documented"
+last_updated: "2026-07"
+validation_status: "Fusion weights and hysteresis thresholds are architecturally placed but numerically unvalidated pending the walk-forward protocol (§10)."

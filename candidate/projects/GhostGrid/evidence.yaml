@@ -1,0 +1,16 @@
+evidence_level: "GENERATED_FROM_EVIDENCE"
+available_evidence:
+  - type: "repository"
+    description: "Source repo — GitHub audit referenced directly for known issues"
+    location: "https://github.com/Okeson453/Ghost-Grid"
+  - type: "design_docs"
+    description: "Core and per-engine design documents"
+    location: "GHOST-GRID-MT5-Design.md, Phantom_Strike_Technical_Design_V1.md, KAIROS_v2.md, ECHO_PULSE_Framework.md, VOID_ENGINE_v1_0_MASTER.md, ARBITER_SIGMA_Unified_Architecture.md, POLM_Master_Doctrine_v1_1.md"
+  - type: "supporting_notes"
+    description: "Architecture (incl. unified-system integration model), features, challenges, technologies, metrics, status already captured"
+    location: "GhostGrid/architecture.md, architecture-unified-system.md, features.md, challenges.md, technologies.yaml, metrics.yaml, status.yaml"
+needed_to_complete:
+  - "Exact project start date."
+  - "Confirm repository visibility (public vs private) directly."
+  - "responsibilities.md still says TODO — the draft responsibilities above are inferred from the design docs; confirm or edit them directly."
+  - "A dedicated project.yaml/evidence.yaml/links.yaml pass for each support-tier sub-project (ArbiterSigma, EchoPulse, KairosSovereign, PhantomStrike, POLM, VoidEngine) — each already has architecture/features/challenges notes but not the structured project.yaml format yet."

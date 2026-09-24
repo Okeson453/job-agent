@@ -1,0 +1,8 @@
+metrics:
+  - {label: "MF-RCE minimum activation score", value: 60, unit: "of 100 (five-factor weighted)", source: "POLM_Master_Doctrine_v1_1.md"}
+  - {label: "Kelly allocation cap — Protocol Alpha", value: 1.5, unit: "% (25% of optimal Kelly)", source: "POLM_Master_Doctrine_v1_1.md"}
+  - {label: "Kelly allocation cap — Protocol Beta", value: 1.0, unit: "% (25% of optimal Kelly)", source: "POLM_Master_Doctrine_v1_1.md"}
+  - {label: "SPRT session-halt threshold", value: "ln(20)", unit: "20:1 odds against edge", source: "POLM_Master_Doctrine_v1_1.md"}
+  - {label: "Portfolio correlation risk cap", value: 3, unit: "% (L6)", source: "POLM_Master_Doctrine_v1_1.md"}
+  - {label: "Daily equity drawdown hard halt", value: 3, unit: "%", source: "POLM_Master_Doctrine_v1_1.md"}
+  - {label: "Phase 1 validation requirement", value: 500, unit: "trades, paper, before parameter trust", source: "POLM_Master_Doctrine_v1_1.md"}

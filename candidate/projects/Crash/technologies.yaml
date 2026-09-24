@@ -1,0 +1,21 @@
+backend:
+  runtime: "Node.js 20+, TypeScript"
+  framework: "Fastify"
+  db: ["PostgreSQL 15+", "TimescaleDB-compatible time-series schema", "Redis 7+"]
+  realtime: "Socket.IO / WebSockets"
+  browser_integration: "Playwright"
+  telegram: "Telegraf"
+  validation: "Zod"
+  logging: "Pino"
+  metrics: "Prometheus client"
+mini_app:
+  framework: "React + Vite"
+  routing: "React Router"
+  state: "Zustand"
+  data: "TanStack React Query"
+  realtime_client: "Socket.IO client"
+  forms: "React Hook Form"
+  charts: "Recharts"
+  styling: "Tailwind CSS"
+admin_dashboard: "Standalone Next.js app"
+deployment: "Docker + docker-compose (base/prod/tenant variants), Railway (railway.toml), GitHub Actions (ci.yml, deploy.yml, docker-build.yml)"

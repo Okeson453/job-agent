@@ -1,0 +1,7 @@
+metrics:
+  - {label: "Fair-odds break-even probability", value: 76.9, unit: "% (1/1.30)", source: "github.com/Okeson453/TestingEngine README"}
+  - {label: "Default MIN_SIGNAL_EDGE", value: 0.02, unit: "probability above fair, adapted online", source: "github.com/Okeson453/TestingEngine README"}
+  - {label: "ACIE_QUALITY_EDGE", value: 0.025, unit: "strategy threshold above fair", source: "github.com/Okeson453/TestingEngine README"}
+  - {label: "ACIE_MAX_DISAGREEMENT", value: 0.06, unit: "ensemble disagreement skip threshold", source: "github.com/Okeson453/TestingEngine README"}
+  - {label: "ACIE warm-up", value: 5, unit: "minimum observed rounds before ACIE is authoritative", source: "github.com/Okeson453/TestingEngine README"}
+  - {label: "Commits", value: 528, unit: "on main, as of inspection", source: "github.com/Okeson453/TestingEngine"}

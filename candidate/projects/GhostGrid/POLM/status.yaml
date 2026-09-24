@@ -1,0 +1,7 @@
+status: "v1.1 production-hardened doctrine — manual/discretionary execution only, no automation built yet"
+last_updated: "2026-07"
+roadmap:
+  phase_1_current: "v1.1 — full rule-based implementation, manual execution via Pine Script indicator suite, 500-trade paper-trading validation"
+  phase_2: "v1.2 — semi-automated alerts, breakout-score automation, real-time Monte Carlo dashboard, weekly Kelly updates"
+  phase_3: "v2.0 — full algo execution via Python microservice, Ghost Grid signal engine integration, correlation risk auto-routing"
+  phase_4: "v3.0 — ML MF-RCE classifier, multi-instrument portfolio orchestration, real-time campaign capital routing via ACE-LSIE"

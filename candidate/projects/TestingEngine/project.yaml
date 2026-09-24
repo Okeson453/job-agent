@@ -1,0 +1,56 @@
+name: "TestingEngine"
+type: "prediction / trading-adjacent system"
+status: "active — 528 commits on main, 19 open pull requests as of last check (2026-09)"
+role: "Sole developer (independent contractor)"
+dates:
+  start: null           # TODO — verify
+  end: null
+  current: true
+description: >
+  BcTracker — an autonomous live prediction engine for BC.Game Crash rounds,
+  targeting a 1.30x cash-out threshold. A long-lived Railway worker ingests
+  live crash events, generates round-ahead (N+1) predictions, validates
+  outcomes after the fact, and delivers signals via Telegram. A separate
+  Vercel dashboard is strictly read-only against the same PostgreSQL
+  database — it never polls or predicts itself.
+problem: >
+  Generate a statistically defensible ENTRY signal for the next crash round
+  before it starts, with zero outcome leakage, exactly-once prediction
+  ownership per round, and delivery that beats the round's own start time.
+solution: >
+  ACIE (Adaptive Crash Intelligence Engine) — a multi-model PSI ensemble
+  with online weight updates and optional Platt calibration — is the
+  authoritative live scorer once history is warm (5+ observed rounds), with
+  a strategy layer (ENTRY / REDUCED_ENTRY / SKIP) gated by an adaptive edge
+  threshold and an ensemble-disagreement skip. A separate PredictionEngine
+  + feature-engine stack runs as an explicitly-tagged fallback when ACIE is
+  unavailable.
+responsibilities:
+  - "Designed and implemented the ED(N)->predict N+1->outbox->Telegram production prediction pipeline."
+  - "Built the ACIE multi-model PSI ensemble with online weight updates and Platt calibration."
+  - "Implemented the correctness contracts: single prediction owner per round, temporal delivery guarantees, no outcome leakage, idempotent dedup, and worker authority fencing."
+  - "Diagnosed and fixed multiple production incidents (documented in FORENSIC_PREDICTION_ENGINE_REPORT.md, LATENCY_* series, DISCONNECTION_DIAGNOSIS.md, DATABASE_AUDIT_REPORT.md)."
+  - "Evaluated and declined a C++23 rewrite of the engine after determining the system is I/O-bound (WebSocket/DB/Telegram), not compute-bound."
+  - "Ran a strict sequential N+1 backtest (~33k rounds) at the 1.30x target and iterated on model quality without overfitting or selective reporting."
+architecture: "See TestingEngine/architecture.md for the full diagram and design invariants — kept as a linked evidence file rather than duplicated here."
+technologies: "See TestingEngine/technologies.yaml (Node.js 22+, TypeScript, TanStack Start, PostgreSQL/Neon, Railway, Vercel, Telegram Bot API, Vitest)."
+key_features:
+  - "ACIE adaptive ensemble with online weight updates and disagreement gating"
+  - "Exactly-once prediction ownership per target round (in-memory claim + DB unique constraint)"
+  - "Temporal delivery contract: signal generated and delivered before target round starts"
+  - "Fallback PredictionEngine stack with explicit FALLBACK_BASELINE provenance tagging"
+  - "Poll-based recovery path when the live WebSocket misses ownership/events"
+security: "No dedicated security-audit doc surfaced yet for this project specifically — see evidence.yaml."
+performance:
+  fair_odds_breakeven: "76.9% (1/1.30)"
+  baseline_win_rate_at_1_30x: "~75.8% (from a ~33k-round strict sequential N+1 test)"
+  note: "Baseline is pre-upgrade; a production-grade uplift pass (target +10-20pp, no overfitting) was requested but completion status should be verified before citing as final."
+engineering_challenges: "See TestingEngine/challenges.md — worker crash-restart loop traced to a wr_utils dynamic-import TypeError, outbox backlog/invariant-violation recovery, and several latency root-cause investigations."
+outcomes: "No independently verified live/production performance numbers beyond the backtest above — do not claim more than the figures in performance: above without pulling updated numbers from the repo's own dated diagnosis docs."
+repository:
+  available: true
+  url: "https://github.com/Okeson453/TestingEngine"
+  visibility: "unclear — repo license note describes it as a private application workspace; verify actual GitHub visibility before claiming public"
+live_url: "https://testing-engine.vercel.app"
+documentation_url: "in-repo docs/ directory — see evidence.yaml for the specific named documents"
+confidentiality: "Private/independent project — verify current repo visibility before sharing the link externally."

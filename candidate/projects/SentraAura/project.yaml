@@ -1,0 +1,53 @@
+name: "SentraAura"
+type: "AI media production platform (Python monorepo)"
+status: "active — 6-batch dependency-ordered build plan chosen, in progress. Structural fixes and several real agent implementations (scripting_agent, executive_orchestrator_agent, market_audience_intelligence_agent) completed; portfolio_strategy_agent was mid-implementation as of the last session; 26+ agents still to address."
+role: "Sole developer / systems architect"
+dates:
+  start: null   # TODO — verify
+  end: null
+  current: true
+description: >
+  An end-to-end, zero-touch AI media production and growth platform that
+  autonomously operates faceless YouTube channels: market intelligence,
+  content strategy, ideation, research, scripting, video generation,
+  clipping, editing, thumbnails, SEO, publishing, scheduling, analytics,
+  and continuous optimization — 30 AI agents across six domains
+  (intelligence, creative, production, clipping, distribution, operations).
+problem: >
+  Turn one research input into one long-form asset, then into many
+  context-complete derivative assets, with measurable performance feeding
+  back into a learned production/distribution policy — autonomously, but
+  human-overridable at every stage.
+solution: >
+  A provider-agnostic, multi-agent architecture (capability interfaces +
+  a LiteLLM provider gateway) orchestrated by Temporal for durable,
+  replayable multi-stage workflows, with a Content Asset Graph providing
+  full lineage from research input to every derivative clip/thumbnail/
+  title. An 8-factor AI Clipping Engine scores candidate clips; Quality &
+  Safety Gates run before anything auto-publishes.
+responsibilities:
+  - "Authored the system architecture (14-layer decomposition, 6-batch dependency-ordered build plan) and the Content Asset Graph lineage model."
+  - "Established the project's core governing principle after a platform migration: all prior 'complete'/'verified' status claims are treated as unconfirmed until re-derived from actual files on disk."
+  - "Ran a systematic honest-baseline audit distinguishing genuinely implemented code from stubs."
+  - "Fixed structural issues: removed 18 duplicate re-export test files, flattened 18 Group B agents to the canonical flat structure, resolved 41 pytest collection errors, rewrote pyproject.toml from scratch with poetry.lock regeneration."
+  - "Implemented real (non-stub) logic for scripting_agent, executive_orchestrator_agent, and market_audience_intelligence_agent, each with tests exercising the real mock-provider-gateway via httpx.ASGITransport."
+  - "Found and fixed two pre-existing bugs in data-ingestion-pipeline surfaced only once real code paths were exercised for the first time."
+architecture: "See SentraAura/architecture.md for the full operating loop, agent architecture, and tech-stack decisions — kept as a linked evidence file rather than duplicated here."
+technologies: "See SentraAura/technologies.yaml (Python monorepo, Poetry, FastAPI, Temporal, NATS JetStream, PostgreSQL/TimescaleDB, pgvector, S3, Redis, LiteLLM, Prometheus/Grafana/Loki/Jaeger, Docker/Kubernetes, GitHub Actions + ArgoCD)."
+key_features:
+  - "Content Asset Graph with full lineage/provenance queries"
+  - "AI Clipping Engine — 8-factor composite scoring (semantic importance, narrative completeness, retention potential, emotional intensity, novelty, hook strength, quotability, contextual boundaries)"
+  - "Quality & Safety Gates before any auto-publish"
+  - "Fault-tolerant automation: explicit failure/recovery matrix, workflow state machine, post-publish compensation/rollback"
+  - "Human Control Plane with a 'Reasoning Artifact' — a decision-transparency record for autonomous choices"
+security: "No dedicated security audit doc yet — see evidence.yaml."
+performance: "No build/launch metrics yet — architecture-specification and active-implementation stage, not yet measurable."
+engineering_challenges: "See SentraAura/challenges.md — tool-name exact-match footguns in a default-deny permission system, asyncio.iscoroutinefunction() not detecting async __call__, pytest __init__.py ancestor-chain requirements colliding with hyphenated service directory names."
+outcomes: "Implementation in progress — no completed/launched product metrics to report yet."
+repository:
+  available: false
+  url: null   # TODO — add if/when you want this as a public portfolio link
+  visibility: "not_publicly_available"
+live_url: null
+documentation_url: "SentraAura-Architecture.md (v2.1, consolidated from 4 source drafts)"
+confidentiality: "Private/independent project — treat as such unless you decide otherwise."

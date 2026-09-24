@@ -1,0 +1,3 @@
+execution: "MT5 Cent Account (USC), MQL5 Named Pipe IPC, Python asyncio, SQLite WAL"
+# Same execution substrate as Ghost Grid and Phantom Strike — Void Engine
+# is a software layer on top, not a separate runtime.

@@ -1,0 +1,12 @@
+evidence_level: "GENERATED_FROM_EVIDENCE"
+available_evidence:
+  - type: "design_docs"
+    description: "Primary technical design documents"
+    location: "OrionSentinel_Technical_Design_v1.md, OrionSentinel-V2-Ready.zip"
+  - type: "supporting_notes"
+    description: "Architecture, features, challenges, technologies, metrics already captured"
+    location: "OrionSentinel/architecture.md, features.md, challenges.md, technologies.yaml, metrics.yaml"
+needed_to_complete:
+  - "Exact project start date."
+  - "Repository URL, if you want this included as a public/portfolio evidence link (currently not publicly available)."
+  - "Live/forward-test results once the v1 demo run and V2 TOD-matrix calibration period complete — do not backfill with estimates."

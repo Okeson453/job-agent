@@ -1,0 +1,2 @@
+current: "TradingView Pine Script (lookahead_off enforced, boolean state machine to prevent repainting)"
+planned_v2: "Python signal layer (MF-RCE + validation) -> Rust execution gateway (order routing + risk enforcement) -> broker API"

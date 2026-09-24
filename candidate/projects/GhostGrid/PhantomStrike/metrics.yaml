@@ -1,0 +1,12 @@
+metrics:
+  - {label: "Resolved per-trade risk cap", value: 2.0, unit: "% of equity, flat across all 5 days", source: "Phantom_Strike_Technical_Design_V1.md §5.2"}
+  - {label: "Streak elasticity ceiling", value: 8.0, unit: "x (diminishing climb, hard reset on loss)", source: "Phantom_Strike_Technical_Design_V1.md"}
+  - {label: "Max theoretical single-trade risk", value: 16.0, unit: "% of equity (2.0% x 8.0x, top of a long streak only)", source: "Phantom_Strike_Technical_Design_V1.md"}
+  - {label: "Global lot ceiling", value: 0.50, unit: "lot", source: "Phantom_Strike_Technical_Design_V1.md"}
+  - {label: "Portfolio exposure cap", value: 25, unit: "% of equity (multi-symbol aggregate)", source: "Phantom_Strike_Technical_Design_V1.md §5.3"}
+  - {label: "Monte Carlo validation (Scenario C)", value: "96.4% completion / 3.6% ruin / 0.0% timeout", unit: "10,000-campaign runs", source: "Phantom_Strike_Technical_Design_V1.md §5.2"}
+  - {label: "Day 1 target", value: 5000, unit: "USC ($50)", source: "Phantom_Strike_Technical_Design_V1.md §8.2"}
+  - {label: "Day 2 target", value: 15000, unit: "USC ($150)", source: "Phantom_Strike_Technical_Design_V1.md §8.2"}
+  - {label: "Day 3 target", value: 25000, unit: "USC ($250)", source: "Phantom_Strike_Technical_Design_V1.md §8.2"}
+  - {label: "Day 4 target", value: 35000, unit: "USC ($350)", source: "Phantom_Strike_Technical_Design_V1.md §8.2"}
+  - {label: "Day 5 target", value: 50000, unit: "USC ($500) — terminal pass/fail gate", source: "Phantom_Strike_Technical_Design_V1.md §8.2"}

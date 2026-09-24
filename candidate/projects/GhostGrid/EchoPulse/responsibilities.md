@@ -1,0 +1,3 @@
+# Echo Pulse — Responsibilities
+
+TODO

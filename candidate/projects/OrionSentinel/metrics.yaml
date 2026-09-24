@@ -1,0 +1,10 @@
+metrics:
+  - {label: "Starting capital (v1)", value: 15, unit: "USD cent-account", source: "OrionSentinel_Technical_Design_v1.md"}
+  - {label: "Lot per position", value: 0.03, unit: "lot, fixed", source: "OrionSentinel_Technical_Design_v1.md"}
+  - {label: "Stop / Target", value: "10 / 15", unit: "pips, fixed", source: "OrionSentinel_Technical_Design_v1.md"}
+  - {label: "Risk:Reward", value: "1 : 1.5", unit: "ratio, fixed", source: "OrionSentinel_Technical_Design_v1.md"}
+  - {label: "Basket size range", value: "2-5", unit: "positions, table-driven from score", source: "OrionSentinel_Technical_Design_v1.md"}
+  - {label: "Friction ceiling — XAUUSD", value: 40, unit: "%", source: "OrionSentinel_Technical_Design_v1.md"}
+  - {label: "Friction ceiling — majors", value: 15, unit: "%", source: "OrionSentinel_Technical_Design_v1.md"}
+  - {label: "Friction ceiling — indices", value: 25, unit: "%", source: "OrionSentinel_Technical_Design_v1.md"}
+  - {label: "CCS ELITE band (V2)", value: 88, unit: "minimum score", source: "OrionSentinel-V2-Ready/Docs/DEPLOYMENT_CHECKLIST.md"}

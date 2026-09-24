@@ -1,0 +1,6 @@
+metrics:
+  - {label: "Layer 0 (Ghost Grid H_c)", value: "Baseline", unit: "confluence scoring", source: "VOID_ENGINE_v1_0_MASTER.md"}
+  - {label: "Layer 1 (Phantom Strike) lift", value: 25, unit: "% over raw sizing (estimated)", source: "VOID_ENGINE_v1_0_MASTER.md"}
+  - {label: "Layer 2 (v1.1 Intelligence) lift", value: "18-23", unit: "% (estimated)", source: "VOID_ENGINE_v1_0_MASTER.md"}
+  - {label: "Layer 3 (Nova Core) lift", value: "12-18", unit: "% (estimated)", source: "VOID_ENGINE_v1_0_MASTER.md"}
+  - {label: "Void Engine total — projected campaign success", value: "83-91", unit: "% at 55% base win rate (estimated, compound, not additive)", source: "VOID_ENGINE_v1_0_MASTER.md"}

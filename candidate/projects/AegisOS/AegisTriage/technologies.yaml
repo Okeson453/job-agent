@@ -1,0 +1,9 @@
+frontend: ["TypeScript", "Next.js 15", "React 19", "Tailwind v4"]
+data: ["PostgreSQL", "Prisma", "Redis"]
+streaming: ["Kafka"]
+orchestration: ["Kubernetes", "Temporal (long-running investigation jobs)"]
+query_layer: ["ClickHouse (hot)", "S3 Parquet (cold)"]
+security: ["Istio service mesh", "SPIFFE/SPIRE workload identity", "OIDC (Keycloak / Auth0)",
+           "OPA/Gatekeeper", "HashiCorp Vault", "immudb (tamper-evident audit log)",
+           "CycloneDX SBOM + Sigstore/Cosign image signing"]
+observability: ["Prometheus", "Loki", "OpenTelemetry", "Grafana"]

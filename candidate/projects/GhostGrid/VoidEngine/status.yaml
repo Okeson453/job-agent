@@ -1,0 +1,3 @@
+status: "v1.0 master specification documented"
+last_updated: "2026-07"
+architecture_law: "Four independent layers, each with a clean interface and an explicit fallback path — disabling any layer returns the system to the behavior of the layer beneath it (build progressivity: verify each layer before activating the next)"

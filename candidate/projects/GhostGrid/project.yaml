@@ -1,0 +1,60 @@
+name: "Ghost Grid (unified system)"
+type: "algorithmic trading system (MQL5 EA + Python orchestration core)"
+status: "active — condensed architecture fully specified (Parts I-XV), design doc dated 2026-07. Support-tier engines (Arbiter-Sigma, Echo Pulse, Kairos Sovereign, Void Engine, POLM) are independently specified but not yet integrated with the core — integration is deliberately deferred to actual implementation time."
+role: "Sole developer / systems architect"
+dates:
+  start: null   # TODO — verify
+  end: null
+  current: true
+description: >
+  A personal-grade MT5 scalping system — a condensed version of a larger
+  institutional-grade predecessor ("PHANTOM GRID"). Ghost Grid + Phantom
+  Strike form the core (signal authority + capital-velocity engine); Void
+  Engine is architecturally the core's next evolution; Arbiter-Sigma, Echo
+  Pulse, Kairos Sovereign, and POLM are independently-designed support
+  systems intended to feed additional intelligence into the core.
+problem: >
+  Reproduce the risk discipline and signal quality of an institutional-
+  grade predecessor system at solo, single-VPS scale — without the
+  infrastructure (Kubernetes, kernel-bypass networking, dedicated ML
+  models) that predecessor assumed.
+solution: >
+  An MQL5 Expert Advisor captures ticks/indicators and exposes them via a
+  Named Pipe to a Python orchestration core, which runs market data
+  through an H_c confluence score (HMP + HLCP + MPP, 0-180, three
+  strategies at 0-60 each) with Schmitt-hysteresis anti-flicker gating,
+  a hardcoded (load-time-only) risk governor, a 4-layer exit system, and
+  a "nuclear" portfolio guardian that closes all positions atomically via
+  asyncio.gather on any single nuclear-trigger condition.
+responsibilities:
+  - "Authored the condensed system architecture (Parts I-XV) and the explicit 'what was removed and why' table documenting 16 institutional-grade components deliberately simplified for solo scale."
+  - "Designed the H_c confluence scoring engine (HMP/HLCP/MPP) and ported it intact from the PHANTOM GRID predecessor despite simplifying everything around it."
+  - "Designed the 4-layer exit system and the atomic nuclear portfolio guardian."
+  - "Defined the unified-system integration model: core (Ghost Grid + Phantom Strike) vs. independently-designed support tier, with integration conflicts explicitly deferred to implementation time rather than resolved on paper."
+  - "Diagnosed known implementation issues from a GitHub repo audit: Linux/Windows Dockerfile incompatibility with pywin32, dataclass schema drift causing ~23% test failures, empty backtesting stubs, a missing asyncio import, and 168 ruff lint issues."
+architecture: "See GhostGrid/architecture.md and architecture-unified-system.md for the full core pipeline and how the seven engines connect — kept as linked evidence rather than duplicated here."
+technologies: "See GhostGrid/technologies.yaml — Python 3.11+ (asyncio/uvloop) hot path, native MQL5 EA, Windows Named Pipes IPC, SQLite WAL state/event log, TA-Lib/pandas-ta, MT5 Strategy Tester + Backtrader, single-VPS Docker Compose."
+key_features:
+  - "Full H_c scoring system (HMP + HLCP + MPP)"
+  - "CVD divergence engine"
+  - "Multi-layer exit warfare (4 layers)"
+  - "Nuclear portfolio guardian (atomic multi-position close via asyncio.gather)"
+  - "Hardcoded, load-time-only risk governor — no runtime override path"
+  - "Telegram control interface: alerts, kill switch (/nuke), daily report"
+security: "Risk containment (hardcoded governor, atomic circuit breaker) is the core design goal rather than conventional application security. No dedicated security audit doc yet."
+performance: "No verified live/backtest results yet — design/specification stage per the repo's own docs. Target latencies stated: 50ms tick-to-signal, 100ms signal-to-order (via named pipe to EA) — targets, not measured results."
+engineering_challenges: "See GhostGrid/challenges.md — the pywin32 Linux/Windows Dockerfile mismatch, dataclass schema drift, and the explicit 16-component design-tradeoff table (what was removed from the institutional predecessor and why)."
+outcomes: "Design/specification stage — build not yet started or not yet reported as started. Realistic solo part-time build estimate: ~31-44 weeks."
+repository:
+  available: true
+  url: "https://github.com/Okeson453/Ghost-Grid"
+  visibility: "verify — not confirmed public vs private"
+live_url: null
+documentation_url: "GHOST-GRID-MT5-Design.md, plus per-engine docs: Phantom_Strike_Technical_Design_V1.md, KAIROS_v2.md, ECHO_PULSE_Framework.md, VOID_ENGINE_v1_0_MASTER.md, ARBITER_SIGMA_Unified_Architecture.md, POLM_Master_Doctrine_v1_1.md"
+confidentiality: "Verify repository visibility before sharing the link externally."
+note: >
+  This project.yaml covers the unified system / Ghost Grid core only.
+  The support-tier sub-projects (ArbiterSigma, EchoPulse, KairosSovereign,
+  PhantomStrike, POLM, VoidEngine) each have their own existing evidence
+  files under GhostGrid/<SubProject>/ but do not yet have their own
+  project.yaml — flagged in evidence.yaml as a follow-up pass.

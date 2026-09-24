@@ -1,0 +1,6 @@
+metrics:
+  - {label: "Tick-to-signal latency target", value: 50, unit: "ms", source: "GHOST-GRID-MT5-Design.md"}
+  - {label: "Signal-to-order latency target", value: 100, unit: "ms (via named pipe to EA)", source: "GHOST-GRID-MT5-Design.md"}
+  - {label: "VPS cost", value: "30-80", unit: "USD/month", source: "GHOST-GRID-MT5-Design.md"}
+  - {label: "Solo build timeline", value: "31-44", unit: "weeks part-time (20h/wk)", source: "GHOST-GRID-MT5-Design.md"}
+  - {label: "Live phased risk rollout", value: "0.1 -> 0.5 -> 1.0", unit: "% risk, 14-day gate/stage", source: "GHOST-GRID-MT5-Design.md"}

@@ -1,0 +1,17 @@
+evidence_level: "GENERATED_FROM_EVIDENCE"
+available_evidence:
+  - type: "synthesis_doc"
+    description: "Primary combined-platform synthesis analysis"
+    location: "aegisos-synthesis-analysis.md"
+  - type: "design_assets"
+    description: "Figma file (SOC Dashboard, Auth Screen, Design Tokens pages queued, pending in-app approval)"
+    location: "Figma file key 6OG3x3JNDXQA28UGDBWpki"
+  - type: "supporting_notes"
+    description: "Architecture, features, challenges, technologies, metrics, status already captured"
+    location: "AegisOS/architecture.md, features.md, challenges.md, technologies.yaml, metrics.yaml, status.yaml"
+needed_to_complete:
+  - "Exact project start date."
+  - "Repository URL once/if a shared build repo exists — none noted yet."
+  - "responsibilities.md still says TODO — the draft responsibilities above are inferred from the synthesis analysis; confirm or edit them directly."
+  - "A dedicated project.yaml/evidence.yaml/links.yaml pass for AegisShare and AegisTriage individually — each already has its own architecture/features/challenges notes but not the structured project.yaml format yet."
+  - "Status note in the existing status.yaml flags: 'AegisOS/AegisShare materials not found in Google Drive as of last check' — worth resolving if those materials are meant to be linked as evidence here."

@@ -1,0 +1,17 @@
+evidence_level: "GENERATED_FROM_EVIDENCE"
+available_evidence:
+  - type: "repository"
+    description: "Full source repo on GitHub — README inspected directly; publicly identifies itself as CrashWave"
+    location: "https://github.com/Okeson453/Crash"
+  - type: "audit_doc"
+    description: "Most recent dated checkpoint / re-audit document"
+    location: "MINI_APP_REAUDIT_2026-08-29.md (in-repo)"
+  - type: "supporting_notes"
+    description: "Architecture, features, challenges, technologies, metrics, status already captured"
+    location: "Crash/architecture.md, features.md, challenges.md, technologies.yaml, metrics.yaml, status.yaml"
+needed_to_complete:
+  - "Exact project start date."
+  - "Confirm repo visibility (public vs private) directly."
+  - "Clarify whether/how this repo's data layer connects to TestingEngine (the acie_sol_records migration name overlap) — don't claim a connection until confirmed."
+  - "Clarify the purpose of the prediction/ risk-engine/ opportunity/ decision/ execution/ directories in src/ if you want them referenced in the description."
+  - "responsibilities.md still says TODO — the draft responsibilities above are inferred from the architecture docs; confirm or edit them directly."

@@ -1,0 +1,15 @@
+evidence_level: "GENERATED_FROM_EVIDENCE"
+available_evidence:
+  - type: "architecture_spec"
+    description: "Primary architecture document, section-numbered"
+    location: "SentraAura-Architecture.md v2.1"
+  - type: "supporting_notes"
+    description: "Architecture, features, challenges, technologies, metrics already captured"
+    location: "SentraAura/architecture.md, features.md, challenges.md, technologies.yaml, metrics.yaml"
+  - type: "engineering_log"
+    description: "Hard-won technical gotchas and implementation-pass workflow"
+    location: "project memory — engineering-practices notes"
+needed_to_complete:
+  - "Exact project start date."
+  - "Repository URL, if/when you want it public."
+  - "Progress metrics once more of the 30 agents reach real (non-stub) implementation — do not report completion percentages that aren't independently verified."

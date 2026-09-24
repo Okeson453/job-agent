@@ -1,0 +1,15 @@
+comparison_to_predecessor:
+  hot_path: "Python 3.11+ (asyncio + uvloop)  <- was Rust/C++ in PHANTOM GRID"
+  ea_language: "MQL5 (native MT5)"
+  ipc: "Windows Named Pipes  <- was ZeroMQ Dealer-Router"
+  message_bus: "asyncio.Queue (in-process)  <- was NATS JetStream"
+  state_cache: "SQLite WAL  <- was Redis CRDT Streams"
+  timeseries: "SQLite (separate table)  <- was TimescaleDB/InfluxDB"
+  indicators: "TA-Lib + pandas-ta"
+  backtester: "MT5 Strategy Tester + Backtrader  <- was VectorBT Pro + custom sim"
+  containerization: "Single Docker Compose on VPS  <- was Kubernetes multi-region"
+  os: "Windows Server 2022 (MT5-native)  <- was Ubuntu 22.04 PREEMPT_RT"
+  monitoring: "CSV metrics + Telegram + SQLite  <- was Prometheus/Grafana/Jaeger"
+  secrets: ".env (chmod 600)  <- was HashiCorp Vault/AWS KMS"
+vps: {min: "2 vCPU / 4GB RAM / 50GB SSD", recommended: "4 vCPU / 8GB RAM / 100GB SSD, Equinix LD4 London (co-located with broker)", cost_per_month_usd: "30-80"}
+latency_targets: {tick_to_signal_ms: 50, signal_to_order_ms: 100}

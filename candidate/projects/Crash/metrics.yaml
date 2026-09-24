@@ -1,0 +1,3 @@
+metrics:
+  - {label: "Commits", value: 22, unit: "on main, as of inspection", source: "github.com/Okeson453/Crash"}
+  - {label: "Database migrations", value: 19, unit: "count (numbered 001-019, two 018s)", source: "github.com/Okeson453/Crash"}

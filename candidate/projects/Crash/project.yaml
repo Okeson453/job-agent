@@ -1,0 +1,65 @@
+name: "CrashWave"
+alt_name: "Crash (repo folder name)"
+type: "real-time crash gaming platform (platform-operator system)"
+status: "production-readiness implementation + re-audit checkpoint complete; final sign-off pending live integration/E2E/load/Lighthouse/security/compliance verification gates (per repo's own status note, most recent dated checkpoint 2026-08)"
+role: "Sole developer"
+dates:
+  start: null   # TODO — verify
+  end: null
+  current: true
+description: >
+  A full-stack, real-time crash gaming and platform-operations system —
+  not a player-side betting bot, but a platform you'd run as the house.
+  A backend Control Plane (Fastify) owns identity, authorization, game
+  state, betting, and balances; a React/Telegram Mini App and a
+  standalone Next.js admin dashboard both consume that same Control
+  Plane rather than duplicating business logic.
+problem: >
+  Build a crash-game platform where the frontend (including the Telegram
+  Mini App) is never trusted as a security boundary — identity,
+  authorization, game state, betting, and balances must all be resolved
+  server-side, on every request, with deterministic, auditable state.
+solution: >
+  A single Control Plane is the sole authority for everything sensitive.
+  Every admin/security-relevant action flows through one explicit chain:
+  Telegram initData -> signature verification -> identity resolution ->
+  tenant resolution -> RBAC -> admin API authorization -> operation ->
+  audit event. Operational safety is governed by named principles: Safety
+  Over Continuity, Deterministic State, Idempotency, Reconciliation,
+  Auditability, Fail-Safe Recovery.
+responsibilities:
+  - "Designed and built the Fastify Control Plane: authentication, RBAC, game services, betting, wallet, admin, and audit subsystems."
+  - "Built the React/Vite Telegram Mini App (Home/Play/Wallet/History/Profile) and a standalone Next.js admin dashboard against the same Control Plane APIs."
+  - "Implemented the betting/wallet safeguard chain: idempotency, risk evaluation, confirmation flow, cash-out, execution-mode gating, balance reconciliation."
+  - "Wrote and ran 19 database migrations tracking the platform's evolution, including production-hardening changes."
+  - "Set up deployment infrastructure: Docker/docker-compose (base/prod/tenant variants), Railway, and GitHub Actions CI/CD (ci.yml, deploy.yml, docker-build.yml)."
+architecture: "See Crash/architecture.md for the full Control Plane diagram and repository structure — kept as a linked evidence file rather than duplicated here."
+technologies: "See Crash/technologies.yaml (Node.js 20+/TypeScript/Fastify, PostgreSQL+TimescaleDB-compatible schema, Redis, Socket.IO, Telegraf, Zod, Pino, Prometheus client, React/Vite/Zustand/TanStack Query on the Mini App, Next.js admin dashboard)."
+key_features:
+  - "Full crash game player interface with real-time multiplier updates, bet placement, cash-out, reconnection/offline-recovery handling"
+  - "Full Telegram Mini App integration (MainButton, reactive theme)"
+  - "Admin available from both a standalone dashboard and the Mini App via the same Control Plane APIs — no duplicated backend"
+  - "Betting/wallet safeguards: idempotency, risk evaluation, balance reconciliation"
+  - "JWT access/refresh auth with revocation, tenant-aware RBAC, audit logging, rate limiting"
+security: "RBAC resolved server-side on every request; client-provided role info is never treated as authoritative. No independent third-party security audit yet — see engineering_challenges."
+performance: "No live/production performance numbers stated in the repo's own docs — 'production acceptance criteria' (zero TS/ESLint errors, no uncontrolled any, no unsanitized HTML injection, no secrets in source, accessibility + security rules passing) is a stated bar, not a confirmed result; final sign-off is explicitly still pending."
+engineering_challenges: >
+  See Crash/challenges.md. Per the repo's own status note, final production
+  sign-off is blocked on: live integration + E2E test execution, load
+  testing (load-test-500.ts) and a soak test (soak-observe.ts), multi-
+  instance WebSocket behavior under Redis coordination at target scale
+  (explicitly flagged as unverified), and Lighthouse/security/compliance
+  gates. Also open: the src/ tree contains prediction/, risk-engine/,
+  opportunity/, decision/, and execution/ directories whose specific
+  purpose isn't expanded on in the README, and a migration name
+  (acie_sol_records) that references TestingEngine's own ACIE
+  terminology — worth clarifying directly whether/how the two repos
+  share data before making any claim about a connection between them.
+outcomes: "Implementation + re-audit stage complete; not yet production-signed-off. Do not cite live performance numbers."
+repository:
+  available: true
+  url: "https://github.com/Okeson453/Crash"
+  visibility: "verify — not confirmed public vs private"
+live_url: null
+documentation_url: "in-repo README + MINI_APP_REAUDIT_2026-08-29.md"
+confidentiality: "Verify repository visibility before sharing the link externally."

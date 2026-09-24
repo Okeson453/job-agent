@@ -1,0 +1,77 @@
+name: "AegisOS"
+type: "enterprise security platform (synthesis of two independently-specified systems)"
+status: "design/synthesis stage — combined-platform concept fully documented; each component module (AegisTriage, AegisShare) independently specified; no shared/unified build started. Figma file created (SOC Dashboard, Auth Screen, Design Tokens pages queued, pending in-app approval)."
+role: "Sole developer / systems architect"
+dates:
+  start: null   # TODO — verify
+  end: null
+  current: true
+description: >
+  AegisOS is what emerges when two independently-specified enterprise
+  security systems are combined: AegisTriage (agentic SIEM triage —
+  "what's happening right now and what do we do about it") and
+  AegisShare (zero-knowledge secure file sharing — "how do we handle
+  sensitive artifacts without ever exposing them"). Every AegisTriage
+  investigation output gets cryptographically sealed into AegisShare's
+  zero-knowledge vault; AegisShare's file-access anomalies become threat
+  signals AegisTriage can reason about.
+problem: >
+  Security incidents always produce sensitive artifacts (logs, evidence,
+  forensic exports) that need to be shared and preserved without
+  exposing them — but SIEM/triage tools and secure-storage tools are
+  normally separate products with no correlation between "what's
+  happening" and "what's been touched."
+solution: >
+  Eight unified bounded contexts (DDD): Identity & Access, Threat
+  Detection, Investigation, Vault & Documents, Policy Engine, Response,
+  Audit & Compliance, Key Management. Five emergent capabilities tie
+  them together: cryptographically-sealed incident evidence packages,
+  a threat-aware vault, zero-knowledge agentic evidence processing
+  (investigation agents never see vault plaintext), unified ABAC/RBAC
+  governance across both platforms, and automated regulatory evidence
+  packages (e.g. GDPR breach notification, generated within minutes).
+responsibilities:
+  - "Authored the combined-platform synthesis analysis identifying 5 non-obvious emergent capabilities from combining two already-designed systems, plus a new market-category positioning."
+  - "Designed the zero-knowledge invariant enforcement mechanism: a CI fitness function asserting the vault domain has zero imports from any inference/analysis module."
+  - "Designed the unified ABAC/RBAC governance model, where cross-platform policy grants the intersection (never the union) of the two platforms' role contexts."
+  - "Designed the automated GDPR breach-notification evidence package (detection timeline, exposure assessment, containment evidence, cryptographic integrity proof, sealed WORM)."
+  - "Scoped the 16-week build path (unified foundation -> vault-as-SIEM-source -> evidence-grant system -> unified policy engine -> automated compliance packages -> hardening/red-team) and identified the hardest engineering problems up front (maintaining the zero-knowledge invariant as agent capability grows; merging two very different visual languages into one identity)."
+architecture: "See AegisOS/architecture.md for the full 8-bounded-context model and 5 emergent capabilities — kept as a linked evidence file rather than duplicated here."
+technologies: "See AegisOS/technologies.yaml — shared AWS CloudHSM cluster with isolated per-platform key hierarchies, single OPA policy engine spanning both platforms, new cross-platform Kafka topics, Figma for design."
+key_features:
+  - "Cryptographically sealed incident evidence packages (SHA-256, AES-256-GCM, per-recipient ECIES-wrapped DEK, S3 Object Lock WORM, one HSM-signed Merkle root across both platforms' logs)"
+  - "Threat-aware vault — file-access anomalies flow into the triage ingestion pipeline (OCSF-normalized) for full-kill-chain correlation"
+  - "Zero-knowledge agentic evidence processing — agents never receive vault plaintext; analyst-authorized, scoped, time-limited unlock only"
+  - "Unified ABAC/RBAC governance across both platforms via one OPA policy context"
+  - "Automated regulatory evidence package generation (GDPR breach notification, sealed WORM, minutes not hours)"
+security: >
+  Security is the product, not an afterthought: named compliance framework
+  coverage includes GDPR Art.32/Art.83, HIPAA 164.312, SOC 2 Type II,
+  ISO 27001, and FIPS 140-3 L3. Explicit new-attack-surface analysis for
+  the combination itself (agent access to vault metadata, cross-platform
+  privilege escalation, evidence-package poisoning, zero-knowledge
+  boundary erosion), each with a stated mitigation.
+performance: "Design/synthesis stage — no build, no live metrics yet."
+engineering_challenges: >
+  See AegisOS/challenges.md. The core tension: AegisShare's zero-
+  knowledge guarantee cannot relax just because AegisTriage's agents want
+  to reason about vault content — addressed structurally (CI fitness
+  functions) rather than by developer discipline alone. Also: unifying
+  two very different visual languages (AegisShare's Bloomberg-Terminal/
+  Palantir data-density vs. AegisTriage's SOC-cockpit aesthetic) into one
+  coherent identity, and a narrower buyer profile (needs both a SOC
+  problem and a data-governance problem) traded for higher willingness-
+  to-pay positioning.
+outcomes: "Synthesis/design stage complete; no implementation started yet, so no product outcomes to report."
+repository:
+  available: false
+  url: null   # TODO
+  visibility: "not_publicly_available"
+live_url: null
+documentation_url: "aegisos-synthesis-analysis.md; Figma file key 6OG3x3JNDXQA28UGDBWpki"
+confidentiality: "Design/concept-stage proprietary work — treat as private unless you decide otherwise."
+note: >
+  This project.yaml covers the AegisOS combined-platform concept only.
+  AegisShare and AegisTriage each have their own existing evidence files
+  under AegisOS/<SubProject>/ but do not yet have their own project.yaml
+  — flagged in evidence.yaml as a follow-up pass.

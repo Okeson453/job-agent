@@ -1,0 +1,5 @@
+metrics:
+  - {label: "Pipeline layers", value: 10, unit: "count (L0-L9)", source: "ARBITER_SIGMA_Unified_Architecture.md"}
+  - {label: "Tranche allocation", value: "30 / 40 / 30", unit: "% across Tranches A/B/C", source: "ARBITER_SIGMA_Unified_Architecture.md §3.7.1"}
+  - {label: "FVG staleness window", value: 30, unit: "bars", source: "ARBITER_SIGMA_Unified_Architecture.md"}
+  - {label: "Cross-framework conflicts resolved", value: 8, unit: "count (CFC-1 through CFC-8)", source: "ARBITER_SIGMA_Unified_Architecture.md"}
