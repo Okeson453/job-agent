@@ -71,7 +71,33 @@ async def _process(job_id: str) -> None:
                 row.recommendation = match_result.recommendation
                 row.analysis_raw = match_result.analysis
 
-            if _qualify(match_result, blended, deterministic):
+            # When DeepSeek is down (402 balance / circuit), promote on strong
+            # deterministic score alone so the pipeline does not stall.
+            llm_unavailable = bool(
+                isinstance(match_result.analysis, dict)
+                and (
+                    "402" in str(match_result.analysis.get("error", ""))
+                    or "Insufficient Balance" in str(match_result.analysis.get("error", ""))
+                    or "balance circuit" in str(match_result.analysis.get("error", "")).lower()
+                )
+            )
+            if (
+                llm_unavailable
+                and deterministic is not None
+                and deterministic >= max(_MIN_BLENDED, 55)
+            ):
+                set_job_state(job, "QUALIFIED", reason=f"deterministic_fallback={deterministic}")
+                if row:
+                    row.recommendation = "QUALIFIED"
+                    row.match_score = deterministic
+                await db.commit()
+                await push(APPLICATION_QUEUE, {"job_id": job_id})
+                logger.info(
+                    "llm.qualified_deterministic_fallback",
+                    job_id=job_id,
+                    score=deterministic,
+                )
+            elif _qualify(match_result, blended, deterministic):
                 set_job_state(job, "QUALIFIED", reason=f"blended={blended}")
                 if row:
                     row.recommendation = "QUALIFIED"
