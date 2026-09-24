@@ -25,6 +25,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     configure_logging(json_output=True)
     configure_tracing(service_name="job-agent-api")
     logger.info("api.starting")
+    try:
+        from src.database.bootstrap import ensure_schema
+
+        await ensure_schema()
+    except Exception as exc:
+        logger.warning("api.schema_bootstrap_failed", error=str(exc))
     yield
     await close_redis()
     await close_engine()

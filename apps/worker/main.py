@@ -30,8 +30,12 @@ async def main() -> None:
     from src.database.session import get_session
 
     try:
+        from src.database.bootstrap import ensure_schema
+
+        await ensure_schema()
         async with get_session() as db:
             await seed_from_json(db)
+        logger.info("worker.seed_ok")
     except Exception as exc:
         logger.warning("worker.seed_failed", error=str(exc))
 
