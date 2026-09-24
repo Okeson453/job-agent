@@ -30,24 +30,25 @@ if config.config_file_name is not None:
 target_metadata = Base.metadata
 
 
-def get_url() -> str:
-    """Resolve the database URL the same way the application does."""
+def get_url() -> tuple[str, dict]:
+    """Resolve the database URL the same way the application does.
+
+    Returns (url, connect_args) so sslmode is converted for asyncpg.
+    """
     import os
+
+    from src.database.session import _normalize_database_url
 
     url = os.environ.get(
         "DATABASE_URL",
         "postgresql+asyncpg://jobagent:jobagent@localhost:5432/jobagent",
     )
-    if url.startswith("postgres://"):
-        url = url.replace("postgres://", "postgresql+asyncpg://", 1)
-    elif url.startswith("postgresql://") and "+asyncpg" not in url:
-        url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
-    return url
+    return _normalize_database_url(url)
 
 
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode (emit SQL without connecting)."""
-    url = get_url()
+    url, _ = get_url()
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -66,11 +67,13 @@ def do_run_migrations(connection: Connection) -> None:
 
 async def run_async_migrations() -> None:
     configuration = config.get_section(config.config_ini_section) or {}
-    configuration["sqlalchemy.url"] = get_url()
+    url, connect_args = get_url()
+    configuration["sqlalchemy.url"] = url
     connectable = async_engine_from_config(
         configuration,
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
+        connect_args=connect_args,
     )
     async with connectable.connect() as connection:
         await connection.run_sync(do_run_migrations)

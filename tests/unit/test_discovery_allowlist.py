@@ -10,7 +10,7 @@ os.environ.setdefault("TELEGRAM_BOT_TOKEN", "t")
 os.environ.setdefault("TELEGRAM_CHAT_ID", "0")
 os.environ.setdefault("ENCRYPTION_KEY", "QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUE=")
 os.environ.setdefault(
-    "ALLOWED_DOMAINS", "boards.greenhouse.io,jobs.lever.co"
+    "ALLOWED_DOMAINS", "boards-api.greenhouse.io,boards.greenhouse.io,api.lever.co,jobs.lever.co"
 )
 
 from src.discovery.http import AllowlistBlocked, allowed_get
