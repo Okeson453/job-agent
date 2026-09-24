@@ -26,7 +26,7 @@ _REQUIRED = frozenset(
 _OPTIONAL_DEFAULTS: dict[str, str] = {
     "DEEPSEEK_API_KEY": "",
     "OMNIROUTE_ENDPOINT": "https://api.deepseek.com/v1",
-    "ALLOWED_DOMAINS": "boards.greenhouse.io,jobs.lever.co,www.linkedin.com,www.indeed.com",
+    "ALLOWED_DOMAINS": "boards-api.greenhouse.io,boards.greenhouse.io,api.lever.co,jobs.lever.co,www.linkedin.com,www.indeed.com,wellfound.com",
     "APPLICATION_MODE_DEFAULT": "APPROVAL",
     "BROWSER_WORKER_CONCURRENCY": "2",
     "MATCHING_WORKER_CONCURRENCY": "5",
@@ -40,7 +40,6 @@ def _ensure_dotenv_loaded() -> None:
     if env_path.exists():
         load_dotenv(env_path, override=False)
     else:
-        # Also try project root relative to this package.
         root = Path(__file__).resolve().parents[2]
         candidate = root / ".env"
         if candidate.exists():
@@ -73,7 +72,6 @@ def get_secret(name: str) -> str:
     secrets = _load_all()
     if name in secrets:
         return secrets[name]
-    # Allow late-bound optional keys that were not in the defaults table.
     value = os.environ.get(name)
     if value is not None:
         return value
