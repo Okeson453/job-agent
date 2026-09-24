@@ -29,6 +29,12 @@ _CONTRACT_TOKENS = (
     "part time",
     "hourly",
     "1099",
+    "independent contractor",
+    "fixed-term",
+    "fixed term",
+    "gig",
+    "c2c",
+    "corp-to-corp",
 )
 _REMOTE_TOKENS = (
     "remote",
