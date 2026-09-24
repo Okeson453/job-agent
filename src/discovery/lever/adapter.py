@@ -2,6 +2,9 @@
 
 Endpoint: https://api.lever.co/v0/postings/{company}?mode=json
 No authentication required for public postings.
+
+``company`` must be the Lever *site name* (the subdomain on jobs.lever.co),
+not the legal company name. Invalid site names return HTTP 404 from Lever.
 """
 
 from __future__ import annotations
@@ -11,14 +14,15 @@ from typing import Any
 
 import httpx
 
-from src.discovery.http import AllowlistBlocked, allowed_get
-
 from src.discovery.base import JobSource
+from src.discovery.http import AllowlistBlocked, allowed_get
 from src.observability.logging import get_logger
 
 logger = get_logger(__name__)
 
-_DEFAULT_COMPANIES = ["lever", "netflix", "shopify"]
+# Public site names known to respond on api.lever.co (verified).
+# Shopify/Netflix are NOT valid Lever site names for the public postings API.
+_DEFAULT_COMPANIES = ["palantir", "spotify"]
 
 
 class LeverAdapter(JobSource):
@@ -37,7 +41,6 @@ class LeverAdapter(JobSource):
                 else list(_DEFAULT_COMPANIES)
             )
 
-
     async def discover(self) -> list[dict[str, Any]]:
         await self._acquire_rate_limit()
         results: list[dict[str, Any]] = []
@@ -48,6 +51,13 @@ class LeverAdapter(JobSource):
                 url = f"https://api.lever.co/v0/postings/{company}"
                 try:
                     resp = await allowed_get(client, url, params={"mode": "json"})
+                    if resp.status_code == 404:
+                        logger.warning(
+                            "lever.discover.unknown_site",
+                            company=company,
+                            hint="LEVER_COMPANIES must use Lever site names (jobs.lever.co/<site>)",
+                        )
+                        continue
                     resp.raise_for_status()
                     jobs = resp.json()
                     if not isinstance(jobs, list):
@@ -55,7 +65,6 @@ class LeverAdapter(JobSource):
                     for raw in jobs:
                         if not raw.get("company"):
                             raw["company"] = company.replace("-", " ").title()
-                        # Return source-native records; normalizer calls parser.
                         if raw.get("id") and (raw.get("text") or raw.get("title")):
                             results.append(raw)
                     logger.info(
@@ -63,12 +72,28 @@ class LeverAdapter(JobSource):
                         company=company,
                         count=len(jobs),
                     )
-                except (httpx.HTTPError, ValueError, AllowlistBlocked) as exc:
+                except AllowlistBlocked as exc:
+                    logger.error("lever.discover.error", company=company, error=str(exc))
+                except httpx.HTTPStatusError as exc:
+                    code = exc.response.status_code if exc.response is not None else None
+                    if code == 404:
+                        logger.warning(
+                            "lever.discover.unknown_site",
+                            company=company,
+                            status=code,
+                        )
+                    else:
+                        logger.error(
+                            "lever.discover.error",
+                            company=company,
+                            status=code,
+                            error=str(exc),
+                        )
+                except (httpx.HTTPError, ValueError) as exc:
                     logger.error(
                         "lever.discover.error",
                         company=company,
                         error=str(exc),
                     )
-                    continue
 
         return results
