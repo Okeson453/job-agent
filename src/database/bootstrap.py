@@ -58,10 +58,14 @@ def _alembic_upgrade_head() -> None:
 
 
 async def _create_all() -> None:
-    # Import models so metadata is complete.
+    # Import every module that defines a mapped table so metadata is complete.
+    import src.applications.automation_failures  # noqa: F401
+    import src.applications.browser.sessions_store  # noqa: F401
     import src.applications.models  # noqa: F401
     import src.candidate.models  # noqa: F401
     import src.jobs.models  # noqa: F401
+    import src.scheduler.outbox  # noqa: F401
+    import src.telegram.notifications_store  # noqa: F401
     from src.database.base import Base
     from src.database.session import get_engine
 
