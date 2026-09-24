@@ -25,7 +25,9 @@ _REQUIRED = frozenset(
 
 _OPTIONAL_DEFAULTS: dict[str, str] = {
     "DEEPSEEK_API_KEY": "",
-    "OMNIROUTE_ENDPOINT": "https://api.deepseek.com/v1",
+    "OMNIROUTE_ENDPOINT": "",  # e.g. http://omniroute:20128/v1 — free gateway
+    "OMNIROUTE_API_KEY": "omniroute",
+    "LLM_MODEL": "auto",
     "ALLOWED_DOMAINS": "boards-api.greenhouse.io,boards.greenhouse.io,api.lever.co,jobs.lever.co,www.linkedin.com,www.indeed.com,wellfound.com",
     "APPLICATION_MODE_DEFAULT": "APPROVAL",
     "BROWSER_WORKER_CONCURRENCY": "2",
@@ -64,32 +66,16 @@ def _load_all() -> dict[str, str]:
 
 
 def get_secret(name: str) -> str:
-    """Return the value of a named secret.
-
-    Raises RuntimeError if a required secret is absent.
-    Raises KeyError if an unknown optional name is requested and not present.
-    """
+    """Return the value of a named secret."""
     secrets = _load_all()
     if name in secrets:
         return secrets[name]
     value = os.environ.get(name)
     if value is not None:
         return value
-    raise KeyError(f"Secret '{name}' is not configured.")
+    raise KeyError(f"Unknown secret: {name}")
 
 
 def reload_secrets() -> None:
-    """Clear secret + dependent caches so subsequent reads re-load the environment."""
+    """Clear cache so subsequent get_secret() re-reads the environment."""
     _load_all.cache_clear()
-    try:
-        from src.security.allowlist import reset_allowlist_cache
-
-        reset_allowlist_cache()
-    except Exception:
-        pass
-    try:
-        from src.security.encryption import reset_encryption_cache
-
-        reset_encryption_cache()
-    except Exception:
-        pass
