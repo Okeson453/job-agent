@@ -1,0 +1,13 @@
+realtime:
+  - name: "WebSocket systems"
+    proficiency: advanced
+    estimated_years: 3
+  - name: "Kafka"
+    proficiency: advanced
+    estimated_years: 2
+  - name: "Redis"
+    proficiency: advanced
+    estimated_years: 3
+  - name: "Real-time signal processing"
+    proficiency: advanced
+    estimated_years: 3

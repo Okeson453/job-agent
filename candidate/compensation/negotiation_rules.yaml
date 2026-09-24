@@ -1,0 +1,25 @@
+negotiable:
+  - base_salary
+  - hourly_rate
+  - contract_rate
+  - working_hours
+  - contract_duration
+  - start_date
+  - remote_work_arrangement
+  - relocation_support
+  - visa_sponsorship
+  - benefits
+  - performance_bonus
+  - equity
+non_negotiable_terms:
+  - legal_compliance
+  - accurate_job_description
+  - payment_terms
+  - professional_work_environment
+walk_away_below: null   # no fixed number — see minimum_acceptable in salary.yaml plus walk_away triggers below
+walk_away:
+  - unpaid_required_work
+  - fraudulent_or_misleading_employment_terms
+  - illegal_work_arrangement
+  - compensation_below_minimum_without_strong_total_compensation_justification
+negotiation_strategy: "evaluate_total_compensation_and_role_value_before_accepting"

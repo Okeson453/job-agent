@@ -1,0 +1,10 @@
+# One-paragraph machine-readable snapshot used to auto-populate form
+# fields like "current title" / "years of experience" across every
+# generated CV. Keep this the single place you update when your
+# headline changes — everything else should reference it, not duplicate it.
+current_title: ""            # TODO e.g. "Independent Full-Stack Developer & Security Engineer"
+years_experience: null       # TODO integer
+career_level: ""             # TODO junior | mid | senior | staff | principal | founder
+primary_domain: ""           # TODO e.g. "full-stack web + application security"
+secondary_domains: []        # TODO e.g. ["algorithmic trading systems", "AI agent platforms"]
+open_to: []                  # TODO ["full-time", "contract", "fractional", "consulting"]

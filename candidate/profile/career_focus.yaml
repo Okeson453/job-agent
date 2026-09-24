@@ -1,0 +1,7 @@
+# What you're actively optimizing your career for right now — distinct
+# from role_targets.yaml (what job titles you'll apply to). This is the
+# "why" that should stay consistent across cover letters.
+focus_statement: ""          # TODO one sentence
+priorities:                  # TODO rank order, most important first
+  - ""
+non_negotiables: []          # TODO e.g. ["remote", "no on-call rotation"]

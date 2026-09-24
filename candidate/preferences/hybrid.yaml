@@ -1,0 +1,20 @@
+hybrid:
+  acceptable: true
+  preferred: "remote_first"
+  maximum_office_days_per_week: 2
+  preferred_office_days_per_week: 0
+  minimum_remote_days_per_week: 3
+
+  conditions:
+    - reasonable_commute
+    - appropriate_compensation
+    - productive_office_environment
+    - predictable_schedule
+
+  exceptions:
+    - "Short-term onsite requirements for onboarding, workshops, deployments, or critical meetings may be considered."
+    - "Relocation-dependent roles require separate evaluation."
+
+  auto_reject_if:
+    office_days_per_week: ">2"
+    unless_explicitly_approved: true

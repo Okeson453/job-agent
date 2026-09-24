@@ -1,0 +1,45 @@
+# estimated_years are application-profile estimates, not exact tenure — verify before submission.
+application_security:
+  - name: "OWASP Top 10"
+    proficiency: advanced
+    estimated_years: 4
+  - name: "Threat modeling"
+    proficiency: advanced
+    estimated_years: 3
+  - name: "Secure API design"
+    proficiency: advanced
+    estimated_years: 4
+  - name: "Authentication and authorization"
+    proficiency: advanced
+    estimated_years: 4
+
+identity_and_access:
+  - name: "OAuth2"
+    proficiency: advanced
+    estimated_years: 3
+  - name: "JWT"
+    proficiency: advanced
+    estimated_years: 4
+  - name: "RBAC"
+    proficiency: advanced
+    estimated_years: 4
+  - name: "MFA"
+    proficiency: advanced
+    estimated_years: 3
+
+security_architecture:
+  - name: "Zero-trust architecture"
+    proficiency: working_advanced
+    estimated_years: 2
+  - name: "SIEM architecture"
+    proficiency: advanced
+    estimated_years: 3
+  - name: "Security monitoring"
+    proficiency: advanced
+    estimated_years: 3
+  - name: "Security event analysis"
+    proficiency: advanced
+    estimated_years: 3
+  - name: "Security engineering (general)"
+    proficiency: advanced
+    estimated_years: 4

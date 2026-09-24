@@ -1,0 +1,39 @@
+company_preferences:
+  preferred_company_types:
+    - technology_companies
+    - fintech_companies
+    - cybersecurity_companies
+    - software_companies
+    - cloud_infrastructure_companies
+    - AI_companies
+    - trading_technology_companies
+    - startups
+    - scaleups
+    - established_enterprises
+
+  company_characteristics:
+    - technically_mature
+    - engineering_driven
+    - clear_product_or_business_objectives
+    - professional_work_environment
+    - remote_capable
+    - international_operations
+    - opportunities_for_technical_growth
+
+  preferred_engineering_culture:
+    - autonomy
+    - ownership
+    - technical_depth
+    - documentation
+    - code_quality
+    - security_awareness
+    - measurable_delivery
+    - continuous_improvement
+
+  avoid:
+    - fraudulent_business_models
+    - illegal_operations
+    - misleading_job_descriptions
+    - unpaid_full_time_roles
+    - unreasonable_uncompensated_work
+    - roles_with_materially_incompatible_requirements

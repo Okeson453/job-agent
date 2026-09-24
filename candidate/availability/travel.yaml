@@ -1,0 +1,5 @@
+willing_to_travel: true
+max_travel_percent: 25
+passport_ready: "valid_or_available_for_renewal"
+international_travel: true
+relocation_related_travel: true

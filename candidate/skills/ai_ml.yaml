@@ -1,0 +1,13 @@
+ai_ml:
+  - name: "Predictive models / model calibration"
+    proficiency: working_advanced
+    estimated_years: 2
+  - name: "Walk-forward validation"
+    proficiency: working_advanced
+    estimated_years: 2
+  - name: "Feature engineering"
+    proficiency: working_advanced
+    estimated_years: 2
+  - name: "AI agent integration"
+    proficiency: working_advanced
+    estimated_years: 2

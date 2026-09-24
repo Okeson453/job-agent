@@ -1,0 +1,37 @@
+items:
+  - name: "Unit testing"
+    proficiency: "advanced"
+    estimated_years: 4
+  - name: "Integration testing"
+    proficiency: "advanced"
+    estimated_years: 3
+  - name: "End-to-end testing"
+    proficiency: "advanced"
+    estimated_years: 3
+  - name: "API testing"
+    proficiency: "advanced"
+    estimated_years: 4
+  - name: "Regression testing"
+    proficiency: "advanced"
+    estimated_years: 4
+  - name: "Test-driven development"
+    proficiency: "working"
+    estimated_years: 2
+  - name: "Performance testing"
+    proficiency: "advanced"
+    estimated_years: 3
+  - name: "Security testing"
+    proficiency: "advanced"
+    estimated_years: 3
+  - name: "Walk-forward validation"
+    proficiency: "advanced"
+    estimated_years: 2
+
+practices:
+  - automated_testing
+  - regression_testing
+  - integration_validation
+  - API_validation
+  - performance_validation
+  - security_validation
+  - production_regression_analysis

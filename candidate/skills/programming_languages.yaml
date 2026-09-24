@@ -1,0 +1,20 @@
+# estimated_years are application-profile estimates, not exact tenure — verify before submission.
+languages:
+  - name: "TypeScript"
+    proficiency: advanced
+    estimated_years: 4
+  - name: "JavaScript"
+    proficiency: advanced
+    estimated_years: 5
+  - name: "Python"
+    proficiency: advanced
+    estimated_years: 4
+  - name: "C++"
+    proficiency: intermediate_advanced
+    estimated_years: 2
+  - name: "Rust"
+    proficiency: working
+    estimated_years: 1
+  - name: "SQL"
+    proficiency: advanced
+    estimated_years: 4

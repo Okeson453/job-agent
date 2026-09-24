@@ -1,0 +1,16 @@
+distributed_systems:
+  - name: "Apache Kafka"
+    proficiency: advanced
+    estimated_years: 2
+  - name: "Distributed systems (general)"
+    proficiency: advanced
+    estimated_years: 3
+  - name: "CQRS"
+    proficiency: advanced
+    estimated_years: 2
+  - name: "Domain-driven design"
+    proficiency: advanced
+    estimated_years: 2
+  - name: "Event sourcing"
+    proficiency: working_advanced
+    estimated_years: 2

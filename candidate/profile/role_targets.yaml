@@ -1,0 +1,5 @@
+# Exact job titles/role families you will apply to. This drives which
+# cv_profiles/* variant gets sent for a given posting.
+primary_targets: []          # TODO e.g. ["Senior Backend Engineer", "Security Engineer"]
+secondary_targets: []        # TODO roles you'd take but aren't hunting for
+excluded_titles: []          # TODO titles you will not apply to even if the pay is right

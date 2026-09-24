@@ -1,0 +1,3 @@
+level: ""                    # TODO junior | mid | senior | staff | principal
+justification: ""            # TODO one line — what makes this level true (scope, not tenure)
+years_at_this_level: null    # TODO

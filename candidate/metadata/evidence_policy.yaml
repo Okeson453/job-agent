@@ -1,0 +1,5 @@
+# What counts as sufficient evidence before a claim can be marked verified.
+minimum_evidence_by_claim_type:
+  metric: "linked report or screenshot in evidence/"
+  employment_dates: "offer letter, contract, or public record"
+  project_ownership: "commit history or repo access proof"

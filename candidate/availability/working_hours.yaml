@@ -1,0 +1,5 @@
+core_hours_local: "09:00-19:00 WAT"
+flexible: true
+preferred_daily_hours: "8-10"
+flexible_for_time_zone_overlap: true
+extended_hours_when_required: true

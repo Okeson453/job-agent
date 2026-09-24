@@ -1,0 +1,13 @@
+devops:
+  - name: "Docker"
+    proficiency: advanced
+    estimated_years: 3
+  - name: "Kubernetes"
+    proficiency: working_advanced
+    estimated_years: 2
+  - name: "Terraform"
+    proficiency: working
+    estimated_years: 2
+  - name: "CI/CD"
+    proficiency: advanced
+    estimated_years: 3   # TODO not separately estimated — verify

@@ -1,0 +1,6 @@
+degrees:
+  - degree: "Bachelor's Degree — Industrial Chemistry"
+    institution: "Kogi State University"
+    start_year: null       # TODO — populate from actual records
+    end_year: null         # TODO — expected completion, populate from actual records
+    status: "in-progress"  # 400L / final year

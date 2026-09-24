@@ -1,0 +1,6 @@
+weekly_capacity_hours: 50
+preferred_weekly_hours: 40
+additional_hours_available_when_required: true
+blocked_days: []
+schedule_flexibility: "high"
+timezone: "WAT (UTC+1)"

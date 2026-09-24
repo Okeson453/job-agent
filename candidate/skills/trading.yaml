@@ -1,0 +1,61 @@
+# proficiency: add per-item {name, level, years} once you decide the granularity you want.
+trading:
+  - name: "Algorithmic trading infrastructure"
+    proficiency: advanced
+    estimated_years: 3
+  - name: "Fintech systems"
+    proficiency: advanced
+    estimated_years: 3
+  - name: "Sports analytics / predictive modeling"
+    proficiency: working_advanced
+    estimated_years: 2
+
+strategies:
+  # CONFIRMED: MPP and HLCP below are completely separate products/projects
+  # from Ghost Grid (see projects/GhostGrid/). Ghost Grid's own H_c score has
+  # components also named "HLCP" and "MPP" (HMP + HLCP + MPP, 0-180) — Ghost
+  # Grid adopted some of these two products' core features/strategies into
+  # its own scoring, but they remain independent projects, not the same one.
+
+  - name: "HLCP — Harmony Liquidity Cascade Pyramid"
+    source_doc: "HLCP_Strategy_Documentation.docx, HLCP_MPP_UNIFIED_SOVEREIGN_DOCTRINE.md"
+    status: "fully implemented and coded — NOT YET BACKTESTED"
+    remaining_validation: "Backtesting is the sole remaining stage before this strategy can be trusted live. Preserve the existing implementation as-is; do not re-architect it — validate it."
+    what_it_is: >
+      Multi-layered crypto/major-markets reversal strategy. Detects when
+      BTC, ETH, SOL, and a chosen altcoin simultaneously reach the same
+      Fibonacci retracement level within a 2% convergence tolerance
+      (the "Harmony Index," H < 0.02) as an institutional-coordination
+      signal, cross-validates against on-chain whale/miner/exchange flow
+      data via a GNN-based flow-divergence pre-filter, then executes via
+      Smart Money Concepts (liquidity sweep -> CHOCH -> FVG+OB retest
+      entry), with an optional "Pyramid Stack" position-size booster for
+      confirmed multi-FVG confluence.
+    four_layers:
+      - "L1 — Harmony Index pre-screen (cross-asset Fib convergence, H < 0.02 gate)"
+      - "L2 — GNN Flow Divergence pre-filter (whale/miner/exchange on-chain flow direction)"
+      - "L3 — SMC liquidity raid + FVG/OB rejection execution (sweep -> CHOCH -> retest entry)"
+      - "L4 — Pyramid Stack confirmation (optional position-size booster)"
+    risk_framework: >
+      Killzone-only entries (London Open 07:00-10:00 UTC / NY Overlap
+      13:00-16:00 UTC); stop-loss 0.3-0.7% beyond wick extreme; tiered
+      take-profit (30% at 1.618 extension, then 15M BOS trailing); a
+      "Vibe-Exit Override" full-exit circuit breaker when sentiment/flow/
+      exchange data all deteriorate simultaneously mid-trade; confluence
+      score 0-11 (8-11 = ideal entry window).
+    non_negotiable_rule: "The FVG + OB retest entry is mandatory — skipping the retest for a shortcut entry at the wick low is explicitly documented as a system violation, not a judgment call."
+
+  - name: "MPP — Muster Point Protocol"
+    source_docs: "MPP_BACKEND_ARCHITECTURE.md, MUSTY_MPP_TradingBot_DesignConcept_v2.md, HLCP_MPP_UNIFIED_SOVEREIGN_DOCTRINE.md"
+    status: "backend architecture fully specified (Node.js/Express/WebSocket); a dedicated testing architecture is defined in the source doc — TODO confirm actual implementation/test completion and backtest status directly, not assumed here"
+    what_it_is: >
+      Pure event-driven, price-action-only (no indicators) reversal
+      strategy built around a strict 5-gate validation pipeline and an
+      explicit instrument state machine: IDLE -> SCANNING -> MAPPED ->
+      ALERT -> PRIMED -> EXECUTING -> MANAGING -> CLOSED. 1H timeframe
+      identifies consolidation ranges and maps pink (entry/risk) /
+      cyan (target/reward) zones; a 5M engine only activates once the
+      1H engine reaches ALERT state (explicit timeframe hierarchy).
+    five_gates: "Gate1 Directional Bias -> Gate2 Zone-Validity -> Gate3 Sweep Confirmation -> Gate4 Reclaim (master trigger, hard block, no execution route bypasses it) -> Gate5 Risk:Reward — all five must PASS; no partial entry on 4/5."
+    hard_constraints: "Zones immutable once session opens; target locked at entry, no mid-trade adjustment; max 1 active trade per instrument per session; max 2 stop-outs per day before session termination."
+    engineering_doctrine: "\"Asymmetric Certainty Architecture\" — optimized for certainty of entry over speed of entry; gate failures are treated as cheap, bad entries as expensive; the pipeline is deliberately slow to approve, fast to invalidate."

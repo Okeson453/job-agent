@@ -1,0 +1,5 @@
+# Roll-up of every claim's verification state. Update whenever you add
+# or change a claim in achievements/, experience/, or projects/.
+claims: []
+# TODO each: {claim, location, status, last_checked}
+#   status: verified | unverified | needs_update

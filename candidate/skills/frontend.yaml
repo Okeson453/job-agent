@@ -1,0 +1,13 @@
+frontend:
+  - name: "React"
+    proficiency: advanced
+    estimated_years: 4
+  - name: "Next.js"
+    proficiency: advanced
+    estimated_years: 4
+  - name: "HTML/CSS"
+    proficiency: advanced
+    estimated_years: 5
+  - name: "Tailwind"
+    proficiency: advanced
+    estimated_years: null   # TODO not explicitly estimated — verify

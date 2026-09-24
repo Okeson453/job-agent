@@ -1,0 +1,26 @@
+industries:
+  primary:
+    - "Software & Technology"
+    - "Cybersecurity"
+    - "Fintech"
+    - "Financial Technology"
+    - "Cloud Computing"
+    - "Artificial Intelligence"
+    - "Data & Analytics"
+    - "Trading Technology"
+
+  secondary:
+    - "Web3 / Blockchain"
+    - "SaaS"
+    - "Developer Tools"
+    - "Infrastructure"
+    - "E-commerce"
+    - "Enterprise Software"
+    - "Media Technology"
+    - "Sports Analytics"
+
+  interest:
+    - "Agriculture Technology"
+    - "Automation"
+    - "Industrial Technology"
+    - "Energy Technology"

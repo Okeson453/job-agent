@@ -1,0 +1,15 @@
+# Not literal course titles — transferable areas from the Industrial
+# Chemistry program, since software/security capability is primarily
+# represented through independent professional/project experience.
+relevant_transferable_areas:
+  - analytical_problem_solving
+  - quantitative_analysis
+  - scientific_methodology
+  - laboratory_methodology
+  - data_analysis
+  - technical_research
+
+note: >
+  Technology and software engineering capabilities are primarily represented
+  through independent professional/project experience rather than the
+  academic degree field.

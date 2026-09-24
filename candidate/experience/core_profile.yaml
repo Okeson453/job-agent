@@ -1,0 +1,34 @@
+professional_profile:
+  primary_title: "Full-Stack Developer & Security Engineer"
+  secondary_titles:
+    - "Backend Engineer"
+    - "Software Engineer"
+    - "Security Engineer"
+    - "Application Security Engineer"
+    - "Systems Engineer"
+    - "Cloud Engineer"
+    - "Platform Engineer"
+    - "Fintech Engineer"
+    - "Trading Systems Engineer"
+
+  estimated_experience:
+    software_engineering: 5
+    full_stack_engineering: 4
+    backend_engineering: 4
+    frontend_engineering: 4
+    security_engineering: 4
+    cloud_engineering: 3
+    distributed_systems: 3
+    fintech_engineering: 3
+    trading_systems: 3
+    algorithmic_trading: 3
+    real_time_systems: 3
+    predictive_analytics: 2
+    AI_systems: 2
+
+  work_model:
+    independent_contractor: true
+    production_system_experience: true
+    end_to_end_delivery: true
+    architecture_and_implementation: true
+    remote_work: true

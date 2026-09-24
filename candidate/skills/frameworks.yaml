@@ -1,0 +1,10 @@
+frameworks:
+  - name: "React"
+    proficiency: advanced
+    estimated_years: 4
+  - name: "Next.js"
+    proficiency: advanced
+    estimated_years: 4
+  - name: "Node.js"
+    proficiency: advanced
+    estimated_years: 4

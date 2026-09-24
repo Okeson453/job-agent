@@ -1,0 +1,3 @@
+freelance_engagements: []
+# TODO each entry: {client_type, domain, start_date, end_date, summary,
+#   payment_rail}  -- payment_rail can reference Payoneer/Wise if relevant

@@ -1,0 +1,39 @@
+employment:
+  - id: "independent-contractor"
+    employer: "Self-Employed / Independent Contractor"
+    job_title: "Full-Stack Developer & Security Engineer"
+    employment_type: "self_employed"
+    location: "Nigeria"
+    start_date:
+      value: null
+      precision: "year_unknown"
+      status: "verify"   # populate from actual records rather than guessing
+    end_date: null
+    current: true
+
+    responsibilities:
+      - "Build and maintain production-oriented full-stack applications."
+      - "Design frontend systems using React, Next.js, TypeScript, HTML, and CSS."
+      - "Design backend services and APIs using Node.js and Python."
+      - "Design relational and time-series data systems using PostgreSQL and TimescaleDB."
+      - "Implement Redis-backed caching and real-time processing."
+      - "Design event-driven and distributed systems using Kafka and WebSockets."
+      - "Build AWS serverless systems using Lambda and related AWS services."
+      - "Implement authentication and authorization using JWT, OAuth2, RBAC, and MFA."
+      - "Apply OWASP principles and threat-modeling practices to application security."
+      - "Design security monitoring and SIEM-oriented systems."
+      - "Develop trading, predictive analytics, and real-time signal-processing systems."
+      - "Perform system architecture, implementation, debugging, testing, optimization, and deployment independently."
+      - "Evaluate and optimize latency-sensitive processing pipelines."
+      - "Work directly with project requirements and independently manage technical delivery."
+
+    capabilities:
+      - full_stack_development
+      - backend_engineering
+      - security_engineering
+      - cloud_engineering
+      - distributed_systems
+      - real_time_systems
+      - fintech
+      - trading_systems
+      - predictive_analytics

@@ -1,0 +1,1 @@
+rate_range: {min: 60, max: 150, currency: "USD"}  # for contract work; calculated dynamically per role in practice

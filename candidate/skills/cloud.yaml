@@ -1,0 +1,16 @@
+cloud:
+  - name: "AWS (general)"
+    proficiency: advanced
+    estimated_years: 3
+  - name: "AWS Lambda"
+    proficiency: advanced
+    estimated_years: 3
+  - name: "API Gateway"
+    proficiency: advanced
+    estimated_years: 3
+  - name: "Amazon S3"
+    proficiency: advanced
+    estimated_years: 3
+  - name: "AWS IAM"
+    proficiency: advanced
+    estimated_years: 3

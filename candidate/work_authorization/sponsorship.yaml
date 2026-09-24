@@ -1,0 +1,15 @@
+nigeria:
+  required: false
+international:
+  required: "conditional"
+visa_sponsorship:
+  required_if_relocation_requires_work_authorization: true
+  preferred_if_available: true
+remote_international_employment:
+  evaluate_case_by_case: true
+relocation:
+  open_to_relocation: true
+  subject_to:
+    - legal_work_authorization
+    - mutually_agreed_terms
+    - relocation_feasibility

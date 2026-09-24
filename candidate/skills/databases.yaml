@@ -1,0 +1,13 @@
+databases:
+  - name: "PostgreSQL"
+    proficiency: advanced
+    estimated_years: 4
+  - name: "Prisma"
+    proficiency: advanced
+    estimated_years: 3
+  - name: "Redis"
+    proficiency: advanced
+    estimated_years: 3
+  - name: "TimescaleDB"
+    proficiency: working_advanced
+    estimated_years: 2

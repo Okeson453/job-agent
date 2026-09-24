@@ -1,0 +1,21 @@
+networking:
+  protocols:
+    - "TCP/IP"
+    - "HTTP/HTTPS"
+    - "WebSocket"
+    - "DNS"
+    - "TLS"
+  systems:
+    - "REST APIs"
+    - "real_time_communication"
+    - "distributed_networking"
+    - "client_server_architecture"
+    - "service_to_service_communication"
+  security:
+    - "TLS"
+    - "secure_api_communication"
+    - "authentication_flows"
+    - "authorization_flows"
+    - "network_security_fundamentals"
+  proficiency: "advanced"
+  estimated_years: 4

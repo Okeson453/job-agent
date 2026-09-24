@@ -1,0 +1,19 @@
+currency: "USD"
+hourly:
+  minimum: 60
+  preferred_minimum: 80
+  target_range: "80-150"
+daily:
+  minimum: 480
+  preferred_minimum: 640
+  target_range: "640-1200"
+calculation_basis: "8-hour_day"
+rate_adjustment_factors:
+  - project_complexity
+  - urgency
+  - duration
+  - technical_risk
+  - responsibility
+  - required_availability
+  - exclusivity
+retainer_terms: ""   # TODO — not yet specified

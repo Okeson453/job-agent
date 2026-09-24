@@ -1,0 +1,8 @@
+# The join table: every `source:` key referenced elsewhere in this repo
+# resolves to an entry here.
+sources: []
+# TODO each:
+#   - id: ""              # matches a `source:` value used elsewhere
+#     type: ""              # repo | report | screenshot | contract | testimonial
+#     path: ""               # relative path into evidence/
+#     date_captured: ""

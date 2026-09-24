@@ -1,0 +1,88 @@
+project_experience:
+  - project: "Bloom Finance"
+    domain: "Fintech"
+    role: "Full-Stack / Backend Engineer"
+    focus:
+      - financial_platform_engineering
+      - backend_services
+      - transaction_systems
+      - authentication
+      - authorization
+
+  - project: "AegisOS"
+    domain: "Security"
+    role: "Security / Systems Engineer"
+    focus:
+      - security_architecture
+      - monitoring
+      - threat_detection
+      - system_security
+
+  - project: "SecureStack"
+    domain: "Cybersecurity"
+    role: "Security Engineer"
+    focus:
+      - application_security
+      - SIEM
+      - security_monitoring
+      - threat_modeling
+
+  - project: "VoteChain"
+    domain: "Web3 / Governance"
+    role: "Full-Stack / Blockchain Engineer"
+    focus:
+      - DAO_governance
+      - on_chain_voting
+      - authentication
+      - decentralized_systems
+
+  - project: "Institutional Trading / Market Data Platform"
+    domain: "Trading Infrastructure"
+    role: "Systems / Backend Engineer"
+    focus:
+      - market_data
+      - trading_infrastructure
+      - real_time_processing
+      - low_latency_systems
+      - statistical_analysis
+
+  - project: "TestingEngine"
+    domain: "Predictive Analytics / Trading"
+    role: "Prediction Systems Engineer"
+    focus:
+      - crash_prediction
+      - statistical_modeling
+      - model_calibration
+      - walk_forward_validation
+      - real_time_signal_generation
+      - latency_optimization
+
+  - project: "SentraAura"
+    domain: "AI Media Systems"
+    role: "Full-Stack / AI Systems Engineer"
+    focus:
+      - autonomous_ai_systems
+      - content_asset_graph
+      - application_architecture
+      - frontend_engineering
+
+  - project: "OrionSentinel"
+    domain: "Algorithmic Trading"
+    role: "Algorithmic Trading Systems Engineer"
+    focus:
+      - MQL5
+      - systematic_strategy_design
+      - market_analysis
+      - trading_automation
+      - risk_management
+
+  - project: "Crash / CrashWave"
+    domain: "Real-Time Prediction Systems"
+    role: "Systems / Prediction Engineer"
+    focus:
+      - real_time_data_ingestion
+      - prediction_engineering
+      - WebSockets
+      - statistical_modeling
+      - signal_processing
+      - performance_optimization

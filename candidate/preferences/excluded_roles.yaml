@@ -1,0 +1,20 @@
+excluded_titles: []   # no specific titles excluded outright — see conditional_exclusions below
+
+hard_exclusions:
+  - "Fraudulent or illegal employment"
+  - "Roles requiring misrepresentation of qualifications"
+  - "Unpaid full-time professional positions"
+  - "Roles involving unauthorized access or malicious cyber activity"
+  - "Roles with materially misleading job descriptions"
+
+conditional_exclusions:
+  - role: "Onsite-only"
+    exclude_when: "relocation/work-authorization requirements are impractical"
+  - role: "Low-compensation role"
+    exclude_when: "total compensation falls below configured minimum"
+  - role: "Non-technical role"
+    exclude_when: "role does not meaningfully use relevant technical capabilities"
+
+application_behavior:
+  automatically_exclude_hard_exclusions: true
+  send_conditional_roles_to_evaluation: true

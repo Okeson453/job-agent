@@ -1,0 +1,29 @@
+locations:
+  current_country: "Nigeria"
+
+  preferred:
+    - "Remote / Global"
+    - "United States"
+    - "Canada"
+    - "United Kingdom"
+    - "European Union"
+    - "Middle East"
+    - "Other international locations where legally eligible"
+
+  acceptable:
+    - "Nigeria"
+    - "Other African countries where appropriate"
+
+  relocation:
+    willing: true
+    international: true
+    conditionally_willing: true
+    conditions:
+      - legal_work_authorization
+      - reasonable_relocation_terms
+      - mutually_beneficial_employment_arrangement
+      - appropriate_compensation
+
+  excluded:
+    - "Locations where legal work authorization cannot be obtained"
+    - "Locations incompatible with agreed employment terms"

@@ -1,0 +1,4 @@
+institutions:
+  - name: "Kogi State University"
+    location: "Nigeria"
+    years_attended: "unknown — verify"   # TODO populate exact years from records

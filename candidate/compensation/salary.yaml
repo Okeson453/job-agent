@@ -1,0 +1,16 @@
+currency: "USD"
+minimum_acceptable: 60
+preferred_range: {minimum: 80, maximum: 150}
+unit: "hourly_equivalent"
+dynamic_evaluation: true
+evaluation_factors:
+  - role_level
+  - technical_complexity
+  - workload
+  - responsibility
+  - company_budget
+  - contract_duration
+  - benefits
+  - time_zone_requirements
+  - exclusivity
+current_salary: null   # optional — intentionally omitted

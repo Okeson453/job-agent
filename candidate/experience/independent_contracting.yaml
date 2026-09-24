@@ -1,0 +1,61 @@
+# Primary professional-experience entry — represents self-employed/
+# independent-contractor work as genuine professional experience.
+experience:
+  - id: "independent-software-security-engineer"
+    employer: "Self-Employed / Independent Contractor"
+    role: "Full-Stack Developer & Security Engineer"
+    employment_type: "independent_contractor"
+    location: "Nigeria"
+    current: true
+
+    estimated_experience_years:
+      overall_software_engineering: 5
+      full_stack_development: 4
+      backend_engineering: 4
+      security_engineering: 4
+
+    responsibilities:
+      - "Design and develop production-oriented full-stack applications."
+      - "Architect backend services, APIs, event-driven systems, and distributed application components."
+      - "Build React and Next.js applications using TypeScript."
+      - "Develop Node.js and Python backend services."
+      - "Design PostgreSQL, Redis, TimescaleDB, and Prisma data layers."
+      - "Build AWS serverless infrastructure using Lambda, API Gateway, S3, and IAM."
+      - "Implement authentication, authorization, RBAC, MFA, OAuth2, and JWT-based security."
+      - "Perform application-security analysis using OWASP principles and threat modeling."
+      - "Design security monitoring and SIEM-oriented systems."
+      - "Develop real-time systems using WebSockets and event-driven processing."
+      - "Work with Kafka and distributed messaging architectures."
+      - "Optimize latency-sensitive processing pipelines."
+      - "Design and validate algorithmic trading and predictive analytics infrastructure."
+      - "Independently manage architecture, implementation, testing, debugging, deployment, and maintenance."
+
+    technical_domains:
+      - full_stack_engineering
+      - backend_engineering
+      - security_engineering
+      - cloud_engineering
+      - distributed_systems
+      - fintech
+      - trading_systems
+      - predictive_analytics
+      - real_time_systems
+
+    technologies:
+      - "TypeScript"
+      - "JavaScript"
+      - "React"
+      - "Next.js"
+      - "Node.js"
+      - "Python"
+      - "C++"
+      - "Rust"
+      - "PostgreSQL"
+      - "Prisma"
+      - "Redis"
+      - "TimescaleDB"
+      - "Kafka"
+      - "AWS"
+      - "Docker"
+      - "Kubernetes"
+      - "Terraform"

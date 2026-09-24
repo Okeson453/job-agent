@@ -1,0 +1,30 @@
+# New file — no prior equivalent in the scaffold. Captures architecture-level
+# capability distinct from individual tools/frameworks listed elsewhere.
+architecture:
+  - name: "Full-stack application architecture"
+    proficiency: advanced
+    estimated_years: 4
+  - name: "Backend architecture"
+    proficiency: advanced
+    estimated_years: 4
+  - name: "Distributed systems architecture"
+    proficiency: advanced
+    estimated_years: 3
+  - name: "Serverless architecture"
+    proficiency: advanced
+    estimated_years: 3
+  - name: "Event-driven architecture"
+    proficiency: advanced
+    estimated_years: 3
+  - name: "Microservice architecture"
+    proficiency: advanced
+    estimated_years: 3
+  - name: "Security architecture"
+    proficiency: advanced
+    estimated_years: 3
+  - name: "Low-latency systems"
+    proficiency: working_advanced
+    estimated_years: 2
+  - name: "System performance optimization"
+    proficiency: advanced
+    estimated_years: 3

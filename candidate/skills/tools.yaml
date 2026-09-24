@@ -1,0 +1,41 @@
+tools:
+  version_control:
+    - "Git"
+    - "GitHub"
+  development:
+    - "VS Code"
+    - "Cursor"
+    - "Codex"
+    - "Node.js"
+    - "npm"
+    - "pnpm"
+  build_and_runtime:
+    - "Docker"
+    - "Linux"
+    - "Bash"
+    - "CMake"
+  cloud:
+    - "AWS"
+    - "AWS SAM"
+    - "AWS Lambda"
+    - "API Gateway"
+    - "S3"
+    - "IAM"
+  databases:
+    - "PostgreSQL"
+    - "Prisma"
+    - "Redis"
+    - "TimescaleDB"
+  infrastructure:
+    - "Kubernetes"
+    - "Terraform"
+  messaging:
+    - "Apache Kafka"
+  testing:
+    - "Jest"
+    - "Playwright"
+    - "API testing tools"
+  security:
+    - "OWASP-oriented tooling"
+    - "SIEM tooling"
+    - "security analysis tooling"

@@ -1,0 +1,36 @@
+target_roles:
+  primary:
+    - "Full-Stack Engineer"
+    - "Software Engineer"
+    - "Backend Engineer"
+    - "Security Engineer"
+    - "Application Security Engineer"
+
+  secondary:
+    - "Systems Engineer"
+    - "Platform Engineer"
+    - "Cloud Engineer"
+    - "DevOps Engineer"
+    - "Solutions Architect"
+    - "Fintech Engineer"
+    - "Trading Systems Engineer"
+    - "Software Architect"
+    - "AI Engineer"
+    - "Machine Learning Engineer"
+
+  role_matching:
+    prioritize:
+      - technical_depth
+      - backend_engineering
+      - security
+      - distributed_systems
+      - fintech
+      - cloud
+      - real_time_systems
+      - trading_systems
+
+    exclude_if:
+      - role_is_misrepresented
+      - requirements_are_materially_incompatible
+      - compensation_is_below_configured_minimum
+      - illegal_or_fraudulent_activity

@@ -1,0 +1,41 @@
+# Hard rules an automated application agent must obey — this is the
+# guardrail file if you ever wire this repo up to an auto-apply tool.
+auto_apply_allowed: true
+requires_manual_review_if:
+  - "role is an onsite-only role with impractical relocation/work-authorization requirements"
+  - "total compensation falls below the configured minimum without strong total-compensation justification"
+  - "role does not meaningfully use relevant technical capabilities"
+never_apply_if:
+  - "fraudulent or illegal employment"
+  - "role requires misrepresentation of qualifications"
+  - "unpaid full-time professional position"
+  - "role involves unauthorized access or malicious cyber activity"
+  - "job description is materially misleading"
+
+employment_preferences:
+  remote_full_time: preferred
+  remote_contract: preferred
+  hybrid: acceptable
+  onsite: conditional
+  freelance: acceptable
+  independent_contracting: acceptable
+
+geography_preferences:
+  international_remote: preferred
+  international_relocation: acceptable
+  nigeria_based: acceptable
+
+schedule_preferences:
+  flexible_timezones: true
+  preferred_daily_hours: "8-10"
+  extended_hours_when_required: true
+
+job_matching:
+  prioritize_skill_match: true
+  prioritize_role_scope: true
+  evaluate_compensation: true
+  evaluate_work_authorization: true
+  evaluate_location: true
+  evaluate_work_mode: true
+  evaluate_required_experience: true
+  avoid_false_qualification_claims: true

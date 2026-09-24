@@ -1,0 +1,22 @@
+backend:
+  - name: "Node.js"
+    proficiency: advanced
+    estimated_years: 4
+  - name: "Python asyncio"
+    proficiency: advanced
+    estimated_years: 3
+  - name: "REST API development"
+    proficiency: advanced
+    estimated_years: 4
+  - name: "WebSocket systems"
+    proficiency: advanced
+    estimated_years: 3
+  - name: "Event-driven architecture"
+    proficiency: advanced
+    estimated_years: 3
+  - name: "Microservices"
+    proficiency: advanced
+    estimated_years: 3
+  - name: "AWS Lambda (SAM)"
+    proficiency: advanced
+    estimated_years: 3
