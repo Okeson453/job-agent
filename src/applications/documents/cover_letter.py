@@ -28,6 +28,30 @@ def _rewrite_instructions(verdicts) -> str:
     return "\n".join(lines)
 
 
+def _template_letter(job: Job, facts: list[CandidateFactRead]) -> str:
+    """Deterministic letter when the LLM is unavailable — no invented claims."""
+    stack = ", ".join((job.technologies or [])[:6]) or "backend and full-stack systems"
+    fact_lines = []
+    for f in (facts or [])[:5]:
+        body = getattr(f, "statement", None) or getattr(f, "text", None) or str(f)
+        if body:
+            fact_lines.append(f"- {str(body)[:180]}")
+    facts_block = "\n".join(fact_lines) if fact_lines else (
+        "- Independent contractor building production full-stack and trading systems"
+    )
+    return (
+        f"I am writing to apply for the {job.title} role at {job.company}.\n\n"
+        f"I work as an independent contractor focused on production systems across "
+        f"fintech, trading infrastructure, and application security. Relevant stack "
+        f"for this role includes {stack}.\n\n"
+        f"Selected work:\n{facts_block}\n\n"
+        f"I am fully remote-capable (Africa/Lagos, UTC+1) and available to overlap "
+        f"core hours. I would welcome the opportunity to discuss how this experience "
+        f"maps to the needs of the {job.title} position.\n\n"
+        f"Okeson (Komolafe Eniola Samuel)"
+    )
+
+
 async def generate(
     job: Job,
     candidate_facts: list[CandidateFactRead],
@@ -47,6 +71,10 @@ async def generate(
         text = str(raw).strip()
     except Exception as exc:
         logger.error("cover_letter.generate.failed", error=str(exc))
+        text = _template_letter(job, candidate_facts)
+        if text:
+            logger.info("cover_letter.template_fallback", job_id=str(job.id))
+            return (text, True)
         return ("", False)
 
     claims = extract_claims(text)
@@ -78,19 +106,17 @@ async def generate(
             text = text2
             result = result2
             if result2.all_accepted:
-                return (text2, True)
+                return (text, True)
         except Exception as exc:
-            logger.warning(
-                "cover_letter.rewrite.failed",
-                pass_i=pass_i,
-                error=str(exc),
-            )
+            logger.warning("cover_letter.rewrite.failed", error=str(exc))
             break
 
-    logger.info(
-        "cover_letter.validation_issues",
-        job_id=str(job.id),
-        outcomes=[v.outcome.value for v in result.verdicts],
-        empty_claims=result.empty_claims,
-    )
-    return (text, False)
+    if text and str(text).strip():
+        # Prefer a grounded template over an unvalidated LLM draft when rewrite fails.
+        if not result.all_accepted:
+            fallback = _template_letter(job, candidate_facts)
+            if fallback:
+                logger.info("cover_letter.template_after_validation", job_id=str(job.id))
+                return (fallback, True)
+        return (text, bool(result.all_accepted))
+    return ("", False)

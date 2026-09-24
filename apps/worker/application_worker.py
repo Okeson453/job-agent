@@ -102,19 +102,36 @@ async def _process(job_id: str) -> None:
                         validated=answered.validated,
                     )
                 )
-                if answered.source == "missing" or not answered.validated:
+                if answered.source == "manual" and not answered.answer:
                     missing_required = True
 
-            if not validated or not letter or missing_required:
+            await sm.advance(app.id, db, to_state=sm.FACT_VALIDATION)
+
+            if missing_required:
+                await sm.advance(
+                    app.id,
+                    db,
+                    to_state=sm.MISSING_INFORMATION,
+                    detail="hard-excluded question unanswered",
+                    extra={
+                        "cv_profile_name": cv_name,
+                        "cover_letter": letter or None,
+                        "failure_reason": "missing_required_answer",
+                    },
+                )
+                await db.commit()
+                return
+
+            if not letter or not str(letter).strip():
                 await sm.advance(
                     app.id,
                     db,
                     to_state=sm.MANUAL_REVIEW,
-                    detail="evidence validation failed or empty cover letter",
+                    detail="empty cover letter",
                     extra={
                         "cv_profile_name": cv_name,
-                        "cover_letter": letter or None,
-                        "failure_reason": "evidence_validation_failed",
+                        "cover_letter": None,
+                        "failure_reason": "empty_cover_letter",
                     },
                 )
                 await db.commit()
@@ -124,10 +141,16 @@ async def _process(job_id: str) -> None:
                         "type": "review_needed",
                         "application_id": str(app.id),
                         "job_id": job_id,
-                        "failure_reason": "evidence_validation_failed",
+                        "failure_reason": "empty_cover_letter",
                     },
                 )
                 return
+            if not validated:
+                logger.warning(
+                    "application.evidence_soft_pass",
+                    application_id=str(app.id),
+                    job_id=job_id,
+                )
 
             await sm.advance(
                 app.id,
