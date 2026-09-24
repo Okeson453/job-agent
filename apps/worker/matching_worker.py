@@ -44,7 +44,7 @@ async def _process(job_id: str) -> None:
 
             set_job_state(job, "NORMALIZED", reason="matching_start")
 
-            # Hard policy: contract + remote/WFH only — never full-time.
+            # Hard policy: remote/WFH only — full-time remote OK; reject on-site office roles.
             reject = hard_filter_reason(job)
             if reject:
                 set_job_state(job, "REJECTED_BY_FILTER", reason=reject)

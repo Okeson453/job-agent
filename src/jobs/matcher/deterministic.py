@@ -9,32 +9,23 @@ from __future__ import annotations
 from src.candidate.schemas import CandidateProfile
 from src.jobs.models import Job
 
-_FULL_TIME_TOKENS = (
-    "full-time",
-    "full time",
-    "fulltime",
-    "permanent role",
-    "permanent position",
-)
-_CONTRACT_TOKENS = (
-    "contract",
-    "contractor",
-    "freelance",
-    "freelancer",
-    "consulting",
-    "consultant",
-    "temporary",
-    "temp ",
-    "part-time",
-    "part time",
-    "hourly",
-    "1099",
-    "independent contractor",
-    "fixed-term",
-    "fixed term",
-    "gig",
-    "c2c",
-    "corp-to-corp",
+# On-site / office signals — rejected when the role requires leaving home.
+_ONSITE_TOKENS = (
+    "on-site",
+    "onsite",
+    "on site",
+    "in-office",
+    "in office",
+    "office-based",
+    "office based",
+    "must be in office",
+    "required in office",
+    "days in office",
+    "hybrid onsite",
+    "hybrid (on-site",
+    "come into the office",
+    "relocate to",
+    "based in our office",
 )
 _REMOTE_TOKENS = (
     "remote",
@@ -45,16 +36,21 @@ _REMOTE_TOKENS = (
     "anywhere",
     "distributed team",
     "fully remote",
+    "remote-first",
+    "remote first",
+    "100% remote",
+    "work remotely",
 )
 
 
 def hard_filter_reason(job: Job) -> str | None:
-    """Return a rejection reason if the job is not contract+remote WFH.
+    """Return a rejection reason if the role cannot be done fully from home.
 
     Policy (operator-defined):
-    - Must be remote / workable from home
-    - Must be contract (or equivalent non-full-time engagement)
-    - Full-time roles are always rejected
+    - Must be remote / work-from-home capable (no commuting to an office)
+    - Full-time remote is allowed
+    - Contract / freelance remote is allowed
+    - On-site and office-required hybrid roles are rejected
     """
     emp = (job.employment_type or "").lower()
     location = (job.location or "").lower()
@@ -64,18 +60,24 @@ def hard_filter_reason(job: Job) -> str | None:
     if not is_remote:
         return "not_remote"
 
-    if any(tok in emp for tok in ("full-time", "full time", "fulltime")):
-        return "full_time"
-    if any(tok in blob for tok in _FULL_TIME_TOKENS) and not any(
-        tok in blob for tok in _CONTRACT_TOKENS
-    ):
-        return "full_time"
-
-    is_contract = any(tok in emp for tok in _CONTRACT_TOKENS) or any(
-        tok in blob for tok in _CONTRACT_TOKENS
+    # Explicit on-site / office requirement without a full-remote option.
+    has_onsite = any(tok in blob for tok in _ONSITE_TOKENS)
+    fully_remote_phrase = any(
+        tok in blob
+        for tok in (
+            "fully remote",
+            "100% remote",
+            "remote only",
+            "remote-only",
+            "work from home",
+            "work-from-home",
+        )
     )
-    if not is_contract:
-        return "not_contract"
+    if has_onsite and not fully_remote_phrase and not bool(job.remote):
+        return "onsite_required"
+    # Hybrid that mandates office days is still a leave-home role.
+    if has_onsite and "hybrid" in blob and not fully_remote_phrase:
+        return "onsite_required"
 
     return None
 
