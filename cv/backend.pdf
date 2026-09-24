@@ -1,0 +1,40 @@
+%PDF-1.4
+1 0 obj<< /Type /Catalog /Pages 2 0 R >>endobj
+2 0 obj<< /Type /Pages /Kids [3 0 R] /Count 1 >>endobj
+3 0 obj<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>endobj
+4 0 obj<< /Length 1385 >>stream
+BT /F1 11 Tf 50 750 Td (Okeson) Tj ET
+BT /F1 11 Tf 50 734 Td (Software Engineer ? Backend / API / Platform focus) Tj ET
+BT /F1 11 Tf 50 718 Td (Nigeria) Tj ET
+BT /F1 11 Tf 50 702 Td () Tj ET
+BT /F1 11 Tf 50 686 Td (Summary) Tj ET
+BT /F1 11 Tf 50 670 Td (Software engineer and accounting student. Designs trading infrastructure, backend platforms, and architecture specifications.) Tj ET
+BT /F1 11 Tf 50 654 Td () Tj ET
+BT /F1 11 Tf 50 638 Td (Skills) Tj ET
+BT /F1 11 Tf 50 622 Td (TypeScript, Python, PostgreSQL, Node.js, Redis, System Design) Tj ET
+BT /F1 11 Tf 50 606 Td () Tj ET
+BT /F1 11 Tf 50 590 Td (Selected work) Tj ET
+BT /F1 11 Tf 50 574 Td (TestingEngine ? designed event-driven trading test architecture; partial TypeScript implementation) Tj ET
+BT /F1 11 Tf 50 558 Td (CrashWave ? design specification for market-crash detection) Tj ET
+BT /F1 11 Tf 50 542 Td (AegisShare ? multi-tenant data isolation architecture \(designed\)) Tj ET
+BT /F1 11 Tf 50 526 Td (OrionSentinel ? research into security monitoring patterns) Tj ET
+BT /F1 11 Tf 50 510 Td () Tj ET
+BT /F1 11 Tf 50 494 Td (Evidence discipline) Tj ET
+BT /F1 11 Tf 50 478 Td (Evidence levels are explicit: designed / partially_implemented / research. Production deployment is not claimed unless stated.) Tj ET
+BT /F1 11 Tf 50 462 Td () Tj ET
+BT /F1 11 Tf 50 446 Td (Stack: Node.js, TypeScript, PostgreSQL, Redis) Tj ET
+endstream
+endobj
+5 0 obj<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000056 00000 n 
+0000000111 00000 n 
+0000000235 00000 n 
+0000001670 00000 n 
+trailer<< /Size 6 /Root 1 0 R >>
+startxref
+1738
+%%EOF
