@@ -29,7 +29,7 @@ _OPTIONAL_DEFAULTS: dict[str, str] = {
     "OMNIROUTE_API_KEY": "omniroute",
     "LLM_MODEL": "auto",
     "ALLOWED_DOMAINS": "boards-api.greenhouse.io,boards.greenhouse.io,api.lever.co,jobs.lever.co,www.linkedin.com,www.indeed.com,wellfound.com",
-    "APPLICATION_MODE_DEFAULT": "APPROVAL",
+    "APPLICATION_MODE_DEFAULT": "AUTO",
     "BROWSER_WORKER_CONCURRENCY": "2",
     "MATCHING_WORKER_CONCURRENCY": "5",
     "LLM_WORKER_CONCURRENCY": "3",

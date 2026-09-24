@@ -105,20 +105,22 @@ async def _process(job_id: str) -> None:
                 await push(APPLICATION_QUEUE, {"job_id": job_id})
                 logger.info("llm.qualified", job_id=job_id, blended=blended)
             elif match_result.recommendation == "REVIEW":
-                # Borderline: surface to operator instead of stranding as MATCHED.
-                set_job_state(job, "MATCHED", reason="semantic_review")
+                # Operator preference: shortlisted / REVIEW jobs auto-apply.
+                # Deterministic stage already filtered weak postings.
+                score = deterministic if deterministic is not None else blended
+                set_job_state(job, "QUALIFIED", reason=f"auto_review_apply score={score}")
                 if row:
-                    row.recommendation = "REVIEW"
+                    row.recommendation = "QUALIFIED"
+                    if deterministic is not None:
+                        row.match_score = deterministic
                 await db.commit()
-                await push(
-                    NOTIFICATION_QUEUE,
-                    {
-                        "type": "review_needed",
-                        "job_id": job_id,
-                        "failure_reason": f"semantic_review blended={blended}",
-                    },
+                await push(APPLICATION_QUEUE, {"job_id": job_id})
+                logger.info(
+                    "llm.qualified_auto_review",
+                    job_id=job_id,
+                    score=score,
+                    blended=blended,
                 )
-                logger.info("llm.review", job_id=job_id, blended=blended)
             else:
                 next_state = "LOW_MATCH"
                 if row:
