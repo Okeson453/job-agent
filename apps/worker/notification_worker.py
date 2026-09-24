@@ -17,19 +17,40 @@ from src.telegram.notifications_store import record_notification
 logger = get_logger(__name__)
 
 
-def _format_approval(job: Job, match: JobMatch | None, application_id: str) -> str:
+def _clip(text: str | None, n: int = 600) -> str:
+    if not text:
+        return "n/a"
+    text = " ".join(text.split())
+    return text if len(text) <= n else text[: n - 1] + "…"
+
+
+def _format_apply_details(job: Job, match: JobMatch | None, application_id: str) -> str:
+    """Full-detail Telegram card for every job being applied to."""
     techs = ", ".join(job.technologies or []) or "n/a"
-    score = match.match_score if match else 0
+    score = 0
+    if match is not None:
+        score = match.match_score or match.deterministic_score or 0
+    salary = "n/a"
+    if job.salary_min or job.salary_max:
+        lo = job.salary_min or "?"
+        hi = job.salary_max or "?"
+        salary = f"{lo}–{hi}"
+    countries = ", ".join(job.countries or []) or "n/a"
     return (
-        f"<b>APPLICATION READY</b>\n\n"
+        f"<b>APPLYING</b>\n\n"
         f"<b>{job.title}</b>\n"
         f"Company: {job.company}\n"
-        f"Remote: {'Yes' if job.remote else 'No'}\n"
-        f"Match: {score}%\n\n"
+        f"Employment: {job.employment_type or 'n/a'}\n"
+        f"Remote: {'Yes' if job.remote else 'No'} | Location: {job.location or 'n/a'}\n"
+        f"Countries: {countries}\n"
+        f"Seniority: {job.seniority or 'n/a'}\n"
+        f"Salary: {salary}\n"
+        f"Match: {score}%\n"
         f"Stack: {techs}\n\n"
+        f"URL: {job.application_url or 'n/a'}\n\n"
+        f"<b>Description</b>\n{_clip(job.description, 800)}\n\n"
         f"Application ID: <code>{application_id}</code>\n"
-        f"/apply {application_id}\n"
-        f"/skip {application_id}"
+        f"/apply {application_id}  ·  /skip {application_id}"
     )
 
 
@@ -73,56 +94,56 @@ async def _send_recorded(msg_type: str, text: str, meta: dict | None = None) -> 
             logger.warning("notification.persist.failed", error=str(exc))
 
 
+async def _load_job_match(job_id: str):
+    async with get_session() as db:
+        job = (
+            await db.execute(select(Job).where(Job.id == uuid.UUID(job_id)))
+        ).scalar_one_or_none()
+        match = None
+        if job is not None:
+            match = (
+                await db.execute(select(JobMatch).where(JobMatch.job_id == job.id))
+            ).scalar_one_or_none()
+        return job, match
+
+
 async def _dispatch(payload: dict) -> None:
     msg_type = payload.get("type", "")
     application_id = payload.get("application_id", "")
     job_id = payload.get("job_id", "")
-    meta = {"application_id": application_id, "job_id": job_id}
+    meta = {
+        "application_id": application_id or None,
+        "job_id": job_id or None,
+        "type": msg_type,
+    }
 
-    if msg_type == "approval_needed":
-        async with get_session() as db:
-            job = None
-            match = None
-            if job_id:
-                r = await db.execute(select(Job).where(Job.id == uuid.UUID(job_id)))
-                job = r.scalar_one_or_none()
-                if job:
-                    mr = await db.execute(
-                        select(JobMatch).where(JobMatch.job_id == job.id)
-                    )
-                    match = mr.scalar_one_or_none()
-            if job:
-                text = _format_approval(job, match, application_id)
-            else:
-                text = f"Application ready: {application_id}\n/apply {application_id}"
-        await _send_recorded(msg_type, text, meta)
+    if msg_type in ("approval_needed", "applying", "application_ready"):
+        job, match = (None, None)
+        if job_id:
+            job, match = await _load_job_match(job_id)
+        if job is not None:
+            text = _format_apply_details(job, match, application_id)
+            await _send_recorded(msg_type, text, meta)
+        else:
+            await _send_recorded(
+                msg_type,
+                f"<b>APPLYING</b>\nApplication: <code>{application_id}</code>\nJob id: {job_id}",
+                meta,
+            )
 
     elif msg_type == "review_needed":
         title = "unknown"
         if job_id:
-            async with get_session() as db:
-                r = await db.execute(select(Job).where(Job.id == uuid.UUID(job_id)))
-                job = r.scalar_one_or_none()
-                if job:
-                    title = job.title
+            job, _ = await _load_job_match(job_id)
+            if job is not None:
+                title = job.title
         await _send_recorded(
             msg_type,
             _format_review(application_id, title, payload.get("failure_reason")),
             meta,
         )
 
-    elif msg_type == "submission_result":
-        extra = " (no CV attached)" if payload.get("missing_cv") else ""
-        if payload.get("success"):
-            await _send_recorded(
-                msg_type, f"Submitted: <code>{application_id}</code>{extra}", meta
-            )
-        else:
-            await _send_recorded(
-                msg_type, _format_failure(application_id, payload.get("error")), meta
-            )
-
-    elif msg_type == "submission_failed":
+    elif msg_type in ("submission_failed", "failure"):
         await _send_recorded(
             msg_type, _format_failure(application_id, payload.get("error")), meta
         )
