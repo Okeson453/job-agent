@@ -1,16 +1,53 @@
-FROM python:3.13-slim
+# syntax=docker/dockerfile:1
+FROM python:3.13-slim AS builder
 
-WORKDIR /app
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 \
-    libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 \
-    libgbm1 libasound2 \
+WORKDIR /build
+RUN apt-get update && apt-get install -y --no-install-recommends gcc \
     && rm -rf /var/lib/apt/lists/*
 
 COPY pyproject.toml ./
-RUN pip install --no-cache-dir -e . \
-    && playwright install --with-deps chromium
+RUN mkdir -p apps src && touch apps/__init__.py src/__init__.py \
+    && PIP_NO_CACHE_DIR=1 PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 \
+       pip install --no-cache-dir --prefix=/install ".[browser]"
 
-COPY . .
+FROM python:3.13-slim AS runtime
+
+WORKDIR /app
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=0 \
+    PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+
+# Minimal shared libs for Chromium headless (not full desktop stack)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libnss3 libnspr4 libatk1.0-0 libatk-bridge2.0-0 libcups2 \
+    libdrm2 libdbus-1-3 libxkbcommon0 libxcomposite1 libxdamage1 \
+    libxfixes3 libxrandr2 libgbm1 libasound2 libpango-1.0-0 \
+    libcairo2 libatspi2.0-0 libx11-6 libxcb1 libxext6 libx11-xcb1 \
+    fonts-liberation ca-certificates \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+COPY --from=builder /install /usr/local
+COPY apps ./apps
+COPY src ./src
+COPY alembic.ini pyproject.toml ./
+COPY cv ./cv
+# Slim candidate seed only (identity/profile/skills/preferences) — not answer_bank/projects
+COPY candidate/identity ./candidate/identity
+COPY candidate/profile ./candidate/profile
+COPY candidate/skills ./candidate/skills
+COPY candidate/preferences ./candidate/preferences
+COPY candidate/metadata ./candidate/metadata
+COPY candidate/work_authorization ./candidate/work_authorization
+COPY candidate/README.md ./candidate/README.md
+
+# Prefer headless shell (smaller); fall back to chromium-only (no --with-deps)
+RUN pip install --no-cache-dir "playwright>=1.49.0" \
+    && (playwright install --only-shell chromium \
+        || playwright install chromium) \
+    && find /usr/local -type d -name '__pycache__' -exec rm -rf {} + 2>/dev/null || true \
+    && find /ms-playwright -type f \( -name '*.zip' -o -name '*.dmg' \) -delete 2>/dev/null || true \
+    && rm -rf /root/.cache /tmp/* /var/tmp/* /var/cache/apt/*
 
 CMD ["python", "-m", "apps.worker.main"]

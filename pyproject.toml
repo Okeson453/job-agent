@@ -13,7 +13,6 @@ dependencies = [
     "pydantic-settings>=2.6.0",
     "redis>=5.2.0",
     "httpx>=0.28.0",
-    "playwright>=1.49.0",
     "apscheduler>=3.10.4",
     "structlog>=24.4.0",
     "opentelemetry-api>=1.28.0",
@@ -23,13 +22,21 @@ dependencies = [
     "cryptography>=43.0.0",
     "selectolax>=0.3.27",
     "beautifulsoup4>=4.12.3",
-    "pymupdf>=1.24.0",
-    "python-docx>=1.1.2",
     "tenacity>=9.0.0",
     "orjson>=3.10.0",
 ]
 
 [project.optional-dependencies]
+browser = [
+    "playwright>=1.49.0",
+]
+docs = [
+    "pymupdf>=1.24.0",
+    "python-docx>=1.1.2",
+]
+worker = [
+    "job-agent[browser]",
+]
 dev = [
     "pytest>=8.3.0",
     "pytest-asyncio>=0.24.0",
@@ -38,6 +45,7 @@ dev = [
     "ruff>=0.8.0",
     "black>=24.10.0",
     "types-redis",
+    "job-agent[browser,docs]",
 ]
 
 [build-system]
