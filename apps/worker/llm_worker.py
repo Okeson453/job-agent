@@ -1,4 +1,9 @@
-"""LLM worker: retrieval + semantic match with independent qualification gate."""
+"""LLM worker: retrieval + semantic match with independent qualification gate.
+
+If the LLM is unavailable or returns a weak recommendation, jobs that already
+cleared the deterministic match threshold are still promoted to application
+so the pipeline does not stall on paid-API outages.
+"""
 
 from __future__ import annotations
 
@@ -18,7 +23,6 @@ from src.observability.tracing import span
 from src.scheduler.queues import (
     APPLICATION_QUEUE,
     LLM_QUEUE,
-    NOTIFICATION_QUEUE,
     ack,
     is_system_paused,
     nack,
@@ -31,10 +35,10 @@ logger = get_logger(__name__)
 _CONCURRENCY = int(os.environ.get("LLM_WORKER_CONCURRENCY", "3"))
 _MIN_SEMANTIC = int(os.environ.get("SEMANTIC_MATCH_MIN", "50"))
 _MIN_BLENDED = int(os.environ.get("BLENDED_MATCH_MIN", "45"))
+_PROMOTE_DET = int(os.environ.get("MATCH_THRESHOLD", "40"))
 
 
 def _qualify(match_result, blended: int, deterministic: int | None) -> bool:
-    """Deterministic gate — LLM recommendation alone is not enough."""
     if match_result.recommendation != "QUALIFIED":
         return False
     if match_result.match < _MIN_SEMANTIC:
@@ -44,6 +48,16 @@ def _qualify(match_result, blended: int, deterministic: int | None) -> bool:
     if deterministic is not None and deterministic < 30:
         return False
     return True
+
+
+async def _promote(db, job, row, job_id: str, reason: str, score: int) -> None:
+    set_job_state(job, "QUALIFIED", reason=reason)
+    if row:
+        row.recommendation = "QUALIFIED"
+        row.match_score = score
+    await db.commit()
+    await push(APPLICATION_QUEUE, {"job_id": job_id})
+    logger.info("llm.qualified", job_id=job_id, reason=reason, score=score)
 
 
 async def _process(job_id: str) -> None:
@@ -63,7 +77,7 @@ async def _process(job_id: str) -> None:
             blended = match_result.match
             if row:
                 row.semantic_score = float(match_result.match)
-                if row.deterministic_score:
+                if row.deterministic_score is not None:
                     blended = int(round((row.deterministic_score + match_result.match) / 2))
                 row.match_score = blended
                 row.strong_matches = match_result.strong_matches
@@ -71,68 +85,35 @@ async def _process(job_id: str) -> None:
                 row.recommendation = match_result.recommendation
                 row.analysis_raw = match_result.analysis
 
-            # When DeepSeek is down (402 balance / circuit), promote on strong
-            # deterministic score alone so the pipeline does not stall.
-            llm_unavailable = bool(
-                isinstance(match_result.analysis, dict)
-                and (
-                    "402" in str(match_result.analysis.get("error", ""))
-                    or "Insufficient Balance" in str(match_result.analysis.get("error", ""))
-                    or "balance circuit" in str(match_result.analysis.get("error", "")).lower()
+            det = int(deterministic) if deterministic is not None else 0
+
+            if _qualify(match_result, blended, deterministic):
+                await _promote(db, job, row, job_id, f"blended={blended}", blended)
+                return
+
+            if match_result.recommendation == "REVIEW":
+                score = det if det else blended
+                await _promote(db, job, row, job_id, f"auto_review_apply score={score}", score)
+                return
+
+            # LLM down or weak semantic: still apply if deterministic cleared threshold
+            if det >= _PROMOTE_DET:
+                await _promote(
+                    db, job, row, job_id, f"deterministic_promote score={det}", det
                 )
+                return
+
+            if row:
+                row.recommendation = "REJECT"
+            set_job_state(job, "LOW_MATCH", reason=f"gate failed blended={blended} det={det}")
+            await db.commit()
+            logger.info(
+                "llm.not_qualified",
+                job_id=job_id,
+                recommendation=match_result.recommendation,
+                blended=blended,
+                deterministic=det,
             )
-            if (
-                llm_unavailable
-                and deterministic is not None
-                and deterministic >= max(_MIN_BLENDED, 55)
-            ):
-                set_job_state(job, "QUALIFIED", reason=f"deterministic_fallback={deterministic}")
-                if row:
-                    row.recommendation = "QUALIFIED"
-                    row.match_score = deterministic
-                await db.commit()
-                await push(APPLICATION_QUEUE, {"job_id": job_id})
-                logger.info(
-                    "llm.qualified_deterministic_fallback",
-                    job_id=job_id,
-                    score=deterministic,
-                )
-            elif _qualify(match_result, blended, deterministic):
-                set_job_state(job, "QUALIFIED", reason=f"blended={blended}")
-                if row:
-                    row.recommendation = "QUALIFIED"
-                await db.commit()
-                await push(APPLICATION_QUEUE, {"job_id": job_id})
-                logger.info("llm.qualified", job_id=job_id, blended=blended)
-            elif match_result.recommendation == "REVIEW":
-                # Operator preference: shortlisted / REVIEW jobs auto-apply.
-                # Deterministic stage already filtered weak postings.
-                score = deterministic if deterministic is not None else blended
-                set_job_state(job, "QUALIFIED", reason=f"auto_review_apply score={score}")
-                if row:
-                    row.recommendation = "QUALIFIED"
-                    if deterministic is not None:
-                        row.match_score = deterministic
-                await db.commit()
-                await push(APPLICATION_QUEUE, {"job_id": job_id})
-                logger.info(
-                    "llm.qualified_auto_review",
-                    job_id=job_id,
-                    score=score,
-                    blended=blended,
-                )
-            else:
-                next_state = "LOW_MATCH"
-                if row:
-                    row.recommendation = "REJECT"
-                set_job_state(job, next_state, reason=f"gate failed blended={blended}")
-                await db.commit()
-                logger.info(
-                    "llm.not_qualified",
-                    job_id=job_id,
-                    recommendation=match_result.recommendation,
-                    blended=blended,
-                )
 
 
 async def run_llm_loop() -> None:
