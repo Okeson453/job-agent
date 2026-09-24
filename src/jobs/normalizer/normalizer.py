@@ -15,6 +15,23 @@ from src.observability.logging import get_logger
 
 logger = get_logger(__name__)
 
+def _coerce_seniority(value: object) -> str | None:
+    """Normalize source-specific seniority shapes to str | None."""
+    if value is None:
+        return None
+    if isinstance(value, str):
+        return value.strip() or None
+    if isinstance(value, list):
+        values = [
+            str(item).strip()
+            for item in value
+            if item is not None and str(item).strip()
+        ]
+        return ", ".join(dict.fromkeys(values)) or None
+    return str(value).strip() or None
+
+
+
 _PARSERS: dict[str, Callable[[dict[str, Any]], dict[str, Any]]] = {
     "greenhouse": greenhouse_parse,
     "lever": lever_parse,
@@ -43,7 +60,7 @@ def normalize(source: str, raw: dict[str, Any]) -> JobCreate:
         if t not in technologies:
             technologies.append(t)
 
-    seniority = fields.get("seniority") or extracted.get("seniority")
+    seniority = _coerce_seniority(fields.get("seniority") or extracted.get("seniority"))
     salary = extracted.get("salary")
 
     salary_min = fields.get("salary_min")
@@ -80,8 +97,7 @@ def normalize(source: str, raw: dict[str, Any]) -> JobCreate:
         salary_min=salary_min,
         salary_max=salary_max,
         salary_currency=salary_currency,
-        technologies=technologies or None,
         seniority=seniority,
+        technologies=technologies or None,
         application_url=application_url,
-        closing_date=fields.get("closing_date"),
     )

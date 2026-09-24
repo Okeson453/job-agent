@@ -1,6 +1,22 @@
 from __future__ import annotations
 from typing import Any
 
+def _normalize_seniority(value: object) -> str | None:
+    if value is None:
+        return None
+    if isinstance(value, str):
+        return value.strip() or None
+    if isinstance(value, list):
+        values = [
+            str(item).strip()
+            for item in value
+            if item is not None and str(item).strip()
+        ]
+        # preserve order, drop dups
+        return ", ".join(dict.fromkeys(values)) or None
+    return str(value).strip() or None
+
+
 def parse(raw: dict[str, Any]) -> dict[str, Any]:
     rid = (
         raw.get("id")
@@ -51,5 +67,5 @@ def parse(raw: dict[str, Any]) -> dict[str, Any]:
         "salary_min": raw.get("minSalary"),
         "salary_max": raw.get("maxSalary"),
         "salary_currency": raw.get("currency"),
-        "seniority": raw.get("seniority"),
+        "seniority": _normalize_seniority(raw.get("seniority")),
     }
