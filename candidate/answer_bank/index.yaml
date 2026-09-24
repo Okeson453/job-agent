@@ -1,0 +1,16 @@
+version: "1.0"
+retrieval_order:
+  - exact_question_match
+  - verified_fact_match
+  - project_evidence_match
+  - approved_template_match
+  - generated_from_evidence
+never_infer:
+  - citizenship
+  - visa
+  - work_authorization
+  - salary
+  - criminal_history
+  - certifications
+  - employment_dates
+  - years_experience

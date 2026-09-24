@@ -1,0 +1,14 @@
+id: "career.why_security"
+category: "career"
+answer_type: text
+evidence_level: VERIFIED_TEMPLATE
+verified: true
+auto_submit: false
+requires_job_context: false
+requires_company_context: false
+answer: "Security combines systems thinking, adversarial reasoning and engineering discipline, which aligns strongly with how I approach software design."
+question_patterns: ["questions about why security"]
+allowed_claims: ["Only claims supported by candidate evidence"]
+forbidden_claims: ["No invented employers, dates, certifications, metrics, salary, authorization, deployment, users, revenue, or years of experience"]
+notes: "Verify this record before autonomous submission."
+last_verified: null

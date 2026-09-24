@@ -1,0 +1,14 @@
+id: "availability.relocation"
+category: "availability"
+answer_type: text
+evidence_level: VERIFIED_TEMPLATE
+verified: true
+auto_submit: false
+requires_job_context: false
+requires_company_context: false
+answer: "Willing to relocate internationally where legally and practically feasible. Preferred destinations include countries outside Africa, subject to employment terms, visa/work authorization, and relocation arrangements."
+question_patterns: ["questions about relocation"]
+allowed_claims: ["Only claims supported by candidate evidence"]
+forbidden_claims: ["No invented employers, dates, certifications, metrics, salary, authorization, deployment, users, revenue, or years of experience"]
+notes: "Sensitive/application-specific field. Candidate must explicitly verify the value."
+last_verified: "2026-09-23"

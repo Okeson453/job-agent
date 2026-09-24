@@ -1,0 +1,14 @@
+id: "projects.SentraAura.lessons_learned"
+category: "projects"
+answer_type: text
+evidence_level: GENERATED_FROM_EVIDENCE
+verified: false
+auto_submit: false
+requires_job_context: true
+requires_company_context: false
+answer: "Generate from verified SentraAura source/docs evidence only."
+question_patterns: ["questions about lessons learned"]
+allowed_claims: ["Only claims supported by candidate evidence"]
+forbidden_claims: ["No invented employers, dates, certifications, metrics, salary, authorization, deployment, users, revenue, or years of experience"]
+notes: "Project implementation status must be checked against actual source before claiming deployment/completion."
+last_verified: null

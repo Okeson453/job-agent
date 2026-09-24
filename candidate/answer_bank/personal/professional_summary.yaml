@@ -1,0 +1,14 @@
+id: "personal.professional_summary"
+category: "personal"
+answer_type: text
+evidence_level: VERIFIED_TEMPLATE
+verified: true
+auto_submit: false
+requires_job_context: false
+requires_company_context: false
+answer: "Full-stack developer and security-focused systems engineer working across frontend, backend, APIs, databases, cloud infrastructure, real-time systems and security engineering."
+question_patterns: ["questions about professional summary"]
+allowed_claims: ["Only claims supported by candidate evidence"]
+forbidden_claims: ["No invented employers, dates, certifications, metrics, salary, authorization, deployment, users, revenue, or years of experience"]
+notes: "Verify this record before autonomous submission."
+last_verified: null

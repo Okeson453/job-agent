@@ -1,0 +1,14 @@
+id: "career.long_term_goals"
+category: "career"
+answer_type: text
+evidence_level: MANUAL_REVIEW
+verified: false
+auto_submit: false
+requires_job_context: false
+requires_company_context: false
+answer: "Maintain as an approved candidate statement; do not invent or materially change without candidate approval."
+question_patterns: ["questions about long term goals"]
+allowed_claims: ["Only claims supported by candidate evidence"]
+forbidden_claims: ["No invented employers, dates, certifications, metrics, salary, authorization, deployment, users, revenue, or years of experience"]
+notes: "Verify this record before autonomous submission."
+last_verified: null

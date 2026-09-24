@@ -1,0 +1,14 @@
+id: "company.company_research"
+category: "company"
+answer_type: text
+evidence_level: GENERATED_FROM_EVIDENCE
+verified: false
+auto_submit: false
+requires_job_context: true
+requires_company_context: true
+answer: "No unsupported claim. Retrieve verified candidate evidence and generate only what the evidence supports."
+question_patterns: ["questions about company research"]
+allowed_claims: ["Only claims supported by candidate evidence"]
+forbidden_claims: ["No invented employers, dates, certifications, metrics, salary, authorization, deployment, users, revenue, or years of experience"]
+notes: "Verify this record before autonomous submission."
+last_verified: null

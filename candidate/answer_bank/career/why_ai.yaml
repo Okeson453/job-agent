@@ -1,0 +1,14 @@
+id: "career.why_ai"
+category: "career"
+answer_type: text
+evidence_level: VERIFIED_TEMPLATE
+verified: true
+auto_submit: false
+requires_job_context: false
+requires_company_context: false
+answer: "I focus on integrating AI into engineered systems with retrieval, validation, observability and deterministic controls rather than relying on unconstrained generation."
+question_patterns: ["questions about why ai"]
+allowed_claims: ["Only claims supported by candidate evidence"]
+forbidden_claims: ["No invented employers, dates, certifications, metrics, salary, authorization, deployment, users, revenue, or years of experience"]
+notes: "Verify this record before autonomous submission."
+last_verified: null

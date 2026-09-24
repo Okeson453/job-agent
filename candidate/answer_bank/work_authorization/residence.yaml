@@ -1,0 +1,14 @@
+id: "work_authorization.residence"
+category: "work_authorization"
+answer_type: text
+evidence_level: VERIFIED_TEMPLATE
+verified: true
+auto_submit: false
+requires_job_context: false
+requires_company_context: false
+answer: "Nigeria."
+question_patterns: ["questions about residence"]
+allowed_claims: ["Only claims supported by candidate evidence"]
+forbidden_claims: ["No invented employers, dates, certifications, metrics, salary, authorization, deployment, users, revenue, or years of experience"]
+notes: "Sensitive/application-specific field. Candidate must explicitly verify the value."
+last_verified: "2026-09-23"

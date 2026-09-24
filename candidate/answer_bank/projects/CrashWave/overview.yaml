@@ -1,0 +1,14 @@
+id: "projects.CrashWave.overview"
+category: "projects"
+answer_type: text
+evidence_level: VERIFIED_TEMPLATE
+verified: true
+auto_submit: false
+requires_job_context: false
+requires_company_context: false
+answer: "Advanced crash-system project involving real-time workflows, automation and intensive systems architecture."
+question_patterns: ["questions about overview"]
+allowed_claims: ["Only claims supported by candidate evidence"]
+forbidden_claims: ["No invented employers, dates, certifications, metrics, salary, authorization, deployment, users, revenue, or years of experience"]
+notes: "Project implementation status must be checked against actual source before claiming deployment/completion."
+last_verified: null

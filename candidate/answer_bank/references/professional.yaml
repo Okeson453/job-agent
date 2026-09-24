@@ -1,0 +1,36 @@
+id: "references.professional"
+category: "references"
+answer_type: structured
+evidence_level: VERIFIED_TEMPLATE
+verified: true
+auto_submit: false
+requires_job_context: false
+requires_company_context: false
+answer: >
+  Professional references can be provided upon request and with the consent
+  of the relevant referees.
+available: true
+status: "available_on_request"
+disclosure: >
+  Professional references can be provided upon request and with the consent
+  of the relevant referees.
+types:
+  - former_clients
+  - professional_collaborators
+  - project_partners
+  - employers_or_contracting_clients
+preferred_reference_context:
+  - technical_capability
+  - software_engineering
+  - security_engineering
+  - reliability
+  - communication
+  - project_delivery
+  - independent_contracting
+contact_permission: "request_before_contact"
+accuracy: true
+question_patterns: ["questions about professional references"]
+allowed_claims: ["Only claims supported by candidate evidence"]
+forbidden_claims: ["No invented employers, dates, certifications, metrics, salary, authorization, deployment, users, revenue, or years of experience"]
+notes: "No named referees on file — this field states availability/policy only, not specific contacts. Add named referees separately if you want them included."
+last_verified: "2026-09-23"

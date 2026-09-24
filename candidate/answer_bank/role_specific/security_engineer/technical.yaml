@@ -1,0 +1,14 @@
+id: "role_specific.security_engineer.technical"
+category: "role_specific"
+answer_type: text
+evidence_level: VERIFIED_FACT
+verified: true
+auto_submit: false
+requires_job_context: false
+requires_company_context: false
+answer: "TypeScript, JavaScript, Python, C++, React, Next.js, Node.js, PostgreSQL, Redis, Docker, AWS, WebSockets, security engineering and distributed systems."
+question_patterns: ["questions about technical"]
+allowed_claims: ["Only claims supported by candidate evidence"]
+forbidden_claims: ["No invented employers, dates, certifications, metrics, salary, authorization, deployment, users, revenue, or years of experience"]
+notes: "Verify this record before autonomous submission."
+last_verified: null

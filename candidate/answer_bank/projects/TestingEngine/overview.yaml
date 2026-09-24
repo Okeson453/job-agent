@@ -1,0 +1,14 @@
+id: "projects.TestingEngine.overview"
+category: "projects"
+answer_type: text
+evidence_level: VERIFIED_TEMPLATE
+verified: true
+auto_submit: false
+requires_job_context: false
+requires_company_context: false
+answer: "BC.Game Crash N+1 prediction-engine project involving causal live prediction, historical crash-round features, ACIE/model logic, real-time ingestion, latency, persistence and notification delivery."
+question_patterns: ["questions about overview"]
+allowed_claims: ["Only claims supported by candidate evidence"]
+forbidden_claims: ["No invented employers, dates, certifications, metrics, salary, authorization, deployment, users, revenue, or years of experience"]
+notes: "Project implementation status must be checked against actual source before claiming deployment/completion."
+last_verified: null

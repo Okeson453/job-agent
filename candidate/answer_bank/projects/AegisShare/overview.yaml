@@ -1,0 +1,14 @@
+id: "projects.AegisShare.overview"
+category: "projects"
+answer_type: text
+evidence_level: VERIFIED_TEMPLATE
+verified: true
+auto_submit: false
+requires_job_context: false
+requires_company_context: false
+answer: "Zero-knowledge file-sharing/security architecture for protecting sensitive artifacts with cryptographic controls."
+question_patterns: ["questions about overview"]
+allowed_claims: ["Only claims supported by candidate evidence"]
+forbidden_claims: ["No invented employers, dates, certifications, metrics, salary, authorization, deployment, users, revenue, or years of experience"]
+notes: "Project implementation status must be checked against actual source before claiming deployment/completion."
+last_verified: null

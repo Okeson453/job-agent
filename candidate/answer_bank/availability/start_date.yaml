@@ -1,0 +1,14 @@
+id: "availability.start_date"
+category: "availability"
+answer_type: text
+evidence_level: VERIFIED_TEMPLATE
+verified: true
+auto_submit: false
+requires_job_context: false
+requires_company_context: false
+answer: "Earliest practical start date to be determined based on the hiring timeline, current commitments, and project requirements. For automated applications, the agent should select the earliest realistic date that does not create a scheduling conflict."
+question_patterns: ["questions about start date"]
+allowed_claims: ["Only claims supported by candidate evidence"]
+forbidden_claims: ["No invented employers, dates, certifications, metrics, salary, authorization, deployment, users, revenue, or years of experience"]
+notes: "Sensitive/application-specific field. Candidate must explicitly verify the value."
+last_verified: "2026-09-23"

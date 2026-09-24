@@ -1,0 +1,21 @@
+version: "1.0"
+default:
+  generation: evidence_only
+  auto_submit: false
+VERIFIED_FACT:
+  generation: fixed
+  auto_submit: true
+VERIFIED_TEMPLATE:
+  generation: template_only
+  auto_submit: true
+GENERATED_FROM_EVIDENCE:
+  generation: llm_allowed
+  validation: required
+  auto_submit: false
+MANUAL_REVIEW:
+  generation: llm_draft_allowed
+  candidate_approval: true
+  auto_submit: false
+NEEDS_VERIFICATION:
+  generation: blocked
+  auto_submit: false

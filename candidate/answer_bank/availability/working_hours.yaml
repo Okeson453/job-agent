@@ -1,0 +1,17 @@
+id: "availability.working_hours"
+category: "availability"
+answer_type: text
+evidence_level: VERIFIED_TEMPLATE
+verified: true
+auto_submit: false
+requires_job_context: false
+requires_company_context: false
+answer: "Preferred working hours: 8-10 hours/day. Willing to work additional hours when project deadlines or critical production requirements demand it. Flexible across time zones and willing to overlap with the company's core working hours."
+preferred_hours_per_day: "8-10"
+extended_hours: "Willing to work additional hours when project deadlines or critical production requirements demand it."
+timezone_flexibility: "Flexible across time zones and willing to overlap with the company's core working hours."
+question_patterns: ["questions about working hours"]
+allowed_claims: ["Only claims supported by candidate evidence"]
+forbidden_claims: ["No invented employers, dates, certifications, metrics, salary, authorization, deployment, users, revenue, or years of experience"]
+notes: "Sensitive/application-specific field. Candidate must explicitly verify the value."
+last_verified: "2026-09-23"

@@ -1,0 +1,14 @@
+id: "work_authorization.relocation"
+category: "work_authorization"
+answer_type: text
+evidence_level: VERIFIED_TEMPLATE
+verified: true
+auto_submit: false
+requires_job_context: false
+requires_company_context: false
+answer: "Open to relocation where legally and practically feasible, particularly where relocation support and appropriate work authorization are provided as part of the employment arrangement."
+question_patterns: ["questions about relocation"]
+allowed_claims: ["Only claims supported by candidate evidence"]
+forbidden_claims: ["No invented employers, dates, certifications, metrics, salary, authorization, deployment, users, revenue, or years of experience"]
+notes: "Sensitive/application-specific field. Candidate must explicitly verify the value."
+last_verified: "2026-09-23"

@@ -1,0 +1,14 @@
+id: "education.field_of_study"
+category: "education"
+answer_type: text
+evidence_level: VERIFIED_FACT
+verified: true
+auto_submit: false
+requires_job_context: false
+requires_company_context: false
+answer: "Industrial Chemistry"
+question_patterns: ["questions about field of study"]
+allowed_claims: ["Only claims supported by candidate evidence"]
+forbidden_claims: ["No invented employers, dates, certifications, metrics, salary, authorization, deployment, users, revenue, or years of experience"]
+notes: "Verify this record before autonomous submission."
+last_verified: null

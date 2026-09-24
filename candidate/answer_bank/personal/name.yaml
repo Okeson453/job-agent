@@ -1,0 +1,14 @@
+id: "personal.name"
+category: "personal"
+answer_type: text
+evidence_level: VERIFIED_FACT
+verified: true
+auto_submit: true
+requires_job_context: false
+requires_company_context: false
+answer: "Komolafe Eniola Samuel"
+question_patterns: ["questions about name"]
+allowed_claims: ["Only claims supported by candidate evidence"]
+forbidden_claims: ["No invented employers, dates, certifications, metrics, salary, authorization, deployment, users, revenue, or years of experience"]
+notes: "Verify this record before autonomous submission."
+last_verified: null

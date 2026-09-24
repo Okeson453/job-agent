@@ -1,0 +1,14 @@
+id: "certifications.certification_questions"
+category: "certifications"
+answer_type: text
+evidence_level: GENERATED_FROM_EVIDENCE
+verified: false
+auto_submit: false
+requires_job_context: true
+requires_company_context: false
+answer: "Generate from verified candidate evidence plus the specific job context; validate every material claim before submission."
+question_patterns: ["questions about certification questions"]
+allowed_claims: ["Only claims supported by candidate evidence"]
+forbidden_claims: ["No invented employers, dates, certifications, metrics, salary, authorization, deployment, users, revenue, or years of experience"]
+notes: "Verify this record before autonomous submission."
+last_verified: null

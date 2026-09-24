@@ -1,0 +1,20 @@
+version: "1.0"
+fail_closed: true
+required_for_auto_submit:
+  - VERIFIED_FACT
+  - VERIFIED_TEMPLATE
+claim_types_requiring_explicit_evidence:
+  - employment
+  - dates
+  - years_experience
+  - education
+  - certification
+  - authorization
+  - visa
+  - salary
+  - metrics
+  - users
+  - revenue
+  - deployment
+  - leadership
+  - ownership

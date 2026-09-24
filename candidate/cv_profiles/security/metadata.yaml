@@ -1,0 +1,5 @@
+variant: "security"
+target_roles: []          # TODO which preferences/target_roles.yaml entries this variant is for
+emphasis: []               # TODO which projects/skills to foreground for this variant
+last_generated: ""          # TODO date
+source_note: "Generated from profile/, experience/, skills/, projects/ — do not hand-edit facts here, edit the source and regenerate."

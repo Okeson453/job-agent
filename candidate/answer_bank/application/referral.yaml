@@ -1,0 +1,17 @@
+id: "application.referral"
+category: "application"
+answer_type: text
+evidence_level: VERIFIED_TEMPLATE
+verified: true
+auto_submit: true
+requires_job_context: false
+requires_company_context: false
+answer: "No referral — direct application."
+referred_by: null
+referral_type: "direct_application"
+manual_review: false
+question_patterns: ["questions about referral"]
+allowed_claims: ["Only claims supported by candidate evidence"]
+forbidden_claims: ["No invented employers, dates, certifications, metrics, salary, authorization, deployment, users, revenue, or years of experience"]
+notes: "Default is direct application with no referral. Update referred_by/referral_type per application if a specific referral applies."
+last_verified: "2026-09-23"
