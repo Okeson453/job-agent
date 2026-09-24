@@ -14,7 +14,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.applications.models import Application
 from src.applications.planner import state_machine as sm
+from src.observability.logging import get_logger
 from src.scheduler.queues import BROWSER_QUEUE, push
+
+logger = get_logger(__name__)
 
 Outcome = Literal["INTERVIEW", "OFFER", "EMPLOYER_REJECTED"]
 
@@ -39,6 +42,9 @@ async def approve_application(
     """READY or MANUAL_REVIEW → SUBMISSION, then enqueue browser work.
 
     Idempotent: already in SUBMISSION/SUBMITTED is a no-op.
+
+    Ordering: flush state, push BROWSER_QUEUE, then commit. If the push fails,
+    roll back so the app stays READY/MANUAL_REVIEW and the operator can retry.
     """
     app = await load_application(db, application_id)
     if app.state in (sm.SUBMITTED, sm.SUBMISSION):
@@ -53,11 +59,23 @@ async def approve_application(
         to_state=sm.SUBMISSION,
         detail="operator_approve",
     )
+    await db.flush()
+    try:
+        await push(
+            BROWSER_QUEUE,
+            {"application_id": str(app.id), "job_id": str(app.job_id)},
+        )
+    except Exception as exc:
+        await db.rollback()
+        logger.error(
+            "application.approve.dispatch_failed",
+            application_id=str(application_id),
+            error=str(exc),
+        )
+        raise ApplicationActionError(
+            f"Failed to enqueue submission: {exc}"
+        ) from exc
     await db.commit()
-    await push(
-        BROWSER_QUEUE,
-        {"application_id": str(app.id), "job_id": str(app.job_id)},
-    )
     return app
 
 
@@ -69,41 +87,34 @@ async def skip_application(
     if app.state in (sm.REJECTED_BY_FILTER, sm.SUBMITTED):
         return app
 
-    # From any non-terminal pre-submit state, walk to REJECTED_BY_FILTER
-    # if the transition exists; otherwise force via event + state write
-    # after recording the skip event.
     if sm.REJECTED_BY_FILTER in sm._VALID_TRANSITIONS.get(app.state, set()):
-        return await sm.advance(
+        app = await sm.advance(
             application_id,
             db,
             to_state=sm.REJECTED_BY_FILTER,
-            detail="user_skip",
-            extra={"failure_reason": "user_skip"},
+            detail="operator_skip",
         )
+        await db.commit()
+        return app
 
-    await sm._record_event(
-        db,
-        application_id,
-        event_type="user_skip",
-        from_state=app.state,
-        to_state=sm.REJECTED_BY_FILTER,
-        detail="user_skip",
-    )
     app.state = sm.REJECTED_BY_FILTER
-    app.failure_reason = "user_skip"
-    await db.flush()
-    await db.refresh(app)
+    await db.commit()
     return app
 
 
 async def record_outcome(
     db: AsyncSession, application_id: uuid.UUID, outcome: Outcome
 ) -> Application:
-    """Move SUBMITTED/INTERVIEW into interview / offer / employer-rejected."""
     app = await load_application(db, application_id)
-    return await sm.advance(
+    if app.state not in (sm.SUBMITTED, sm.INTERVIEW):
+        raise ApplicationActionError(
+            f"Cannot record outcome from state {app.state}"
+        )
+    app = await sm.advance(
         application_id,
         db,
         to_state=outcome,
-        detail=f"operator_outcome:{outcome}",
+        detail="operator_outcome",
     )
+    await db.commit()
+    return app

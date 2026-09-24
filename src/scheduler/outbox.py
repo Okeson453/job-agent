@@ -16,7 +16,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column
 
 from src.database.base import Base
-from src.scheduler.queues import push
+from src.observability.logging import get_logger
+from src.scheduler.queues import NOTIFICATION_QUEUE, push
+
+logger = get_logger(__name__)
+
+_ALERT_ATTEMPTS = 10
 
 
 class OutboxEvent(Base):
@@ -48,6 +53,11 @@ async def enqueue_outbox(
 
 
 async def publish_pending_outbox(db: AsyncSession, *, limit: int = 50) -> int:
+    """Publish pending rows. Never mark business outbox as 'failed'.
+
+    After _ALERT_ATTEMPTS consecutive failures, emit a notification so the
+    operator sees the backlog, but keep status=pending for indefinite retry.
+    """
     result = await db.execute(
         select(OutboxEvent)
         .where(OutboxEvent.status == "pending")
@@ -60,12 +70,31 @@ async def publish_pending_outbox(db: AsyncSession, *, limit: int = 50) -> int:
         try:
             await push(row.queue_name, dict(row.payload))
             row.status = "published"
-            row.published_at = func.now()  # type: ignore[assignment]
+            row.published_at = datetime.utcnow()  # type: ignore[assignment]
             published += 1
         except Exception as exc:
             row.attempts = int(row.attempts or 0) + 1
             row.last_error = str(exc)
-            if row.attempts >= 10:
-                row.status = "failed"
+            logger.warning(
+                "outbox.publish.failed",
+                outbox_id=str(row.id),
+                queue=row.queue_name,
+                attempts=row.attempts,
+                error=str(exc),
+            )
+            if row.attempts == _ALERT_ATTEMPTS:
+                try:
+                    await push(
+                        NOTIFICATION_QUEUE,
+                        {
+                            "type": "dlq_dead_letter",
+                            "queue": f"outbox:{row.queue_name}",
+                            "error": str(exc),
+                            "outbox_id": str(row.id),
+                            "attempts": row.attempts,
+                        },
+                    )
+                except Exception as notify_exc:
+                    logger.error("outbox.alert.failed", error=str(notify_exc))
     await db.flush()
     return published

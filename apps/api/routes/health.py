@@ -1,8 +1,9 @@
-"""Health and readiness endpoints."""
+"""Health, readiness, and worker heartbeat endpoints."""
 
 from __future__ import annotations
 
 import asyncio
+import time
 
 from fastapi import APIRouter
 from sqlalchemy import text
@@ -47,3 +48,49 @@ async def ready() -> dict[str, str]:
             content={"status": "not_ready", "errors": errors},
         )
     return {"status": "ready"}
+
+
+@router.get("/health/workers")
+async def workers() -> dict:
+    """Worker loop heartbeat + queue depths + pause flag."""
+    data: dict = {"status": "ok", "paused": False, "ticks": {}, "queues": {}, "dlq": {}}
+    try:
+        client = await get_redis()
+        paused = await client.get("system:paused")
+        data["paused"] = paused in (b"1", "1", 1, True)
+        for name in (
+            "discovery",
+            "matching",
+            "llm",
+            "application",
+            "browser",
+            "notification",
+        ):
+            raw = await client.get(f"worker:{name}:beat")
+            if raw is not None:
+                try:
+                    data["ticks"][name] = int(raw)
+                except (TypeError, ValueError):
+                    data["ticks"][name] = str(raw)
+        for q in (
+            "discovery_queue",
+            "analysis_queue",
+            "llm_queue",
+            "application_queue",
+            "browser_queue",
+            "notification_queue",
+        ):
+            data["queues"][q] = await client.llen(q)
+            data["dlq"][q] = await client.llen(f"{q}:dlq")
+        now = int(time.time())
+        stale = [
+            n for n, ts in data["ticks"].items()
+            if isinstance(ts, int) and now - ts > 1800
+        ]
+        data["stale_loops"] = stale
+        if stale:
+            data["status"] = "degraded"
+    except Exception as exc:
+        data["status"] = "error"
+        data["error"] = str(exc)
+    return data
