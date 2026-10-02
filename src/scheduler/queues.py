@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import os
+import time
 import uuid
 from typing import Any
 
@@ -36,6 +37,7 @@ ALL_QUEUES = (
 
 _MAX_ATTEMPTS = 5
 _PAUSE_KEY = "system:paused"
+_REDIS_LAST_HEALTH: float = 0.0
 _redis = None
 
 
@@ -48,20 +50,55 @@ def _processing_key(queue_name: str) -> str:
 
 
 async def get_redis():
+    """Return the Redis client, creating a fresh one when unhealthy.
+
+    On free-tier managed Redis the provider can put the instance to sleep;
+    the first operations after wake-up can fail. Reconnect here so a stale
+    pooled connection does not poison the whole process.
+    """
     global _redis
     if _redis is not None:
-        return _redis
+        try:
+            await _redis.ping()
+            _REDIS_LAST_HEALTH = time.time()
+            return _redis
+        except Exception as exc:
+            logger.warning("redis.unhealthy", error=str(exc))
+            try:
+                await _redis.aclose()
+            except Exception:
+                pass
+            _redis = None
     import redis.asyncio as redis
 
     url = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
     _redis = redis.from_url(url, decode_responses=True)
+    # Fail fast on a dead/asleep instance instead of hanging forever.
+    _redis.socket_timeout = 10
+    _redis.socket_connect_timeout = 10
     return _redis
+
+
+async def redis_health() -> bool:
+    """Ping Redis; return True when reachable. Never raises."""
+    global _redis
+    try:
+        client = await get_redis()
+        await client.ping()
+        _REDIS_LAST_HEALTH = time.time()
+        return True
+    except Exception:
+        _redis = None
+        return False
 
 
 async def close_redis() -> None:
     global _redis
     if _redis is not None:
-        await _redis.aclose()
+        try:
+            await _redis.aclose()
+        except Exception:
+            pass
         _redis = None
 
 
@@ -110,7 +147,10 @@ async def nack(message: dict[str, Any], *, error: str = "") -> None:
     payload["last_error"] = error
     body = json.dumps({"id": env_id or str(uuid.uuid4()), "payload": payload, "attempts": attempts, "error": error})
     if env_id:
-        await client.hdel(_processing_key(queue_name), env_id)
+        try:
+            await client.hdel(_processing_key(queue_name), env_id)
+        except Exception:
+            pass
     if attempts >= _MAX_ATTEMPTS:
         await client.rpush(_dlq_key(queue_name), body)
         try:
@@ -154,6 +194,7 @@ async def requeue_dlq(queue_name: str, *, limit: int = 100) -> int:
             envelope["attempts"] = 0
             payload = dict(envelope.get("payload") or {})
             payload.pop("_attempts", None)
+            payload.pop("last_error", None)
             envelope["payload"] = payload
             out = json.dumps(envelope)
         except Exception:
