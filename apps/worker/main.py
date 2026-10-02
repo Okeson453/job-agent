@@ -192,42 +192,53 @@ async def _startup_recovery() -> dict[str, dict[str, int]]:
 
 
 async def _infra_keepalive_loop(stop_event: asyncio.Event) -> None:
-    """Ping Redis (and Postgres) periodically.
+    """Ping Redis and Postgres periodically.
 
-    Free-tier managed instances sleep when idle; periodic traffic is what
-    providers use to keep them awake, and repeated connection attempts are
-    what wake them up. This loop also logs connectivity state changes so
-    an asleep backend is visible instead of silent.
+    Free-tier managed instances sleep when idle; repeated connection
+    attempts are what wake them up, and periodic traffic keeps them awake.
+    Both backends are pinged unconditionally: Postgres must stay warm
+    even while Redis is asleep, and vice versa. Connectivity state
+    changes are logged so an asleep backend is visible, not silent.
     """
     from src.scheduler.queues import redis_health
 
     interval = int(os.environ.get("INFRA_KEEPALIVE_INTERVAL_SECONDS", "45"))
-    last_ok: bool | None = None
+    last_redis_ok: bool | None = None
+    last_pg_ok: bool | None = None
     while not stop_event.is_set():
-        ok = False
+        redis_ok = False
         try:
-            ok = await asyncio.wait_for(redis_health(), timeout=15)
+            redis_ok = await asyncio.wait_for(redis_health(), timeout=15)
         except Exception:
-            ok = False
-        if ok != last_ok:
-            if ok:
+            redis_ok = False
+        if redis_ok != last_redis_ok:
+            if redis_ok:
                 logger.info("infra.redis_awake")
             else:
                 logger.error(
                     "infra.redis_unreachable",
                     hint="Redis asleep/unreachable; queues stall until it wakes",
                 )
-            last_ok = ok
-        if ok:
-            try:
-                from sqlalchemy import text
+            last_redis_ok = redis_ok
 
-                from src.database.session import get_session
+        pg_ok = False
+        try:
+            from sqlalchemy import text
 
-                async with get_session() as db:
-                    await asyncio.wait_for(db.execute(text("SELECT 1")), timeout=10)
-            except Exception:
-                pass
+            from src.database.session import get_session
+
+            async with get_session() as db:
+                await asyncio.wait_for(db.execute(text("SELECT 1")), timeout=10)
+            pg_ok = True
+        except Exception:
+            pg_ok = False
+        if pg_ok != last_pg_ok:
+            if pg_ok:
+                logger.info("infra.postgres_awake")
+            else:
+                logger.error("infra.postgres_unreachable")
+            last_pg_ok = pg_ok
+
         try:
             await asyncio.wait_for(stop_event.wait(), timeout=interval)
             break
