@@ -3,22 +3,20 @@
 from __future__ import annotations
 
 import asyncio
+import json
+import os
 import signal
 import sys
 import time
+import traceback
 from typing import Any, Callable, Coroutine
 
+# Lightweight imports only: logging must be configured before any heavy
+# module (worker loops, adapters, DB) is imported so failures are visible.
 from src.observability.logging import configure_logging, get_logger
 from src.observability.tracing import configure_tracing
 from src.scheduler.queues import close_redis
 from src.database.session import close_engine
-
-from apps.worker.discovery_worker import run_discovery_loops
-from apps.worker.matching_worker import run_matching_loop
-from apps.worker.llm_worker import run_llm_loop
-from apps.worker.application_worker import run_application_loop
-from apps.worker.browser_worker import run_browser_loop
-from apps.worker.notification_worker import run_notification_loop
 
 logger = get_logger(__name__)
 
@@ -29,6 +27,10 @@ TASK_ALIVE: dict[str, bool] = {}
 def mark_tick(name: str) -> None:
     TASK_TICKS[name] = time.time()
     TASK_ALIVE[name] = True
+
+
+def _env(name: str, default: str) -> bool:
+    return os.environ.get(name, default).lower() in ("1", "true", "yes", "on")
 
 
 async def _supervise(
@@ -65,20 +67,161 @@ async def _supervise(
     TASK_ALIVE[name] = False
 
 
-async def _heartbeat_loop(stop_event: async
-io.Event) -> None:
+async def _heartbeat_loop(stop_event: asyncio.Event) -> None:
+    """Fast first beat, t
+hen hourly. Guarantees logs are never empty."""
+    first = True
     while not stop_event.is_set():
         alive = sum(1 for v in TASK_ALIVE.values() if v)
+        paused = False
+        try:
+            from src.scheduler.queues import is_system_paused
+
+            paused = await is_system_paused()
+        except Exception:
+            paused = False
         logger.info(
             "worker.heartbeat",
             tasks_alive=alive,
+            system_paused=paused,
             ticks={k: int(v) for k, v in TASK_TICKS.items()},
         )
+        timeout = 30 if first else 3600
+        first = False
         try:
-            await asyncio.wait_for(stop_event.wait(), timeout=3600)
+            await asyncio.wait_for(stop_event.wait(), timeout=timeout)
             break
         except asyncio.TimeoutError:
             continue
+
+
+async def _startup_diag() -> None:
+    """Log environment and connectivity facts so silent stalls are diagnosable."""
+    from urllib.parse import urlparse
+
+    from src.scheduler.queues import dlq_depths, get_redis
+
+    def _host(url: str) -> str:
+        try:
+            return urlparse(url).netloc or "n/a"
+        except Exception:
+            return "n/a"
+
+    db_host = _host(os.environ.get("DATABASE_URL", ""))
+    redis_host = _host(os.environ.get("REDIS_URL", ""))
+    required = ("DATABASE_URL", "REDIS_URL", "TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID", "ENCRYPTION_KEY")
+    missing = [k for k in required if not os.environ.get(k)]
+    logger.info(
+        "worker.diag",
+        db_host=db_host or "unset",
+        redis_host=redis_host or "unset",
+        missing_secrets=missing,
+        mode=os.environ.get("APPLICATION_MODE_DEFAULT", "APPROVAL"),
+        match_threshold=os.environ.get("MATCH_THRESHOLD", "auto"),
+    )
+
+    # Redis reachability with timeout.
+    try:
+        client = await get_redis()
+        await asyncio.wait_for(client.ping(), timeout=10)
+        logger.info("worker.diag.redis_ok", host=redis_host)
+    except Exception as exc:
+        logger.error("worker.diag.redis_failed", host=redis_host,
+ error=str(exc))
+
+    try:
+        depths = await asyncio.wait_for(dlq_depths(), timeout=10)
+        if depths:
+            logger.warning("worker.diag.dlq", depths=depths)
+    except Exception:
+        pass
+
+
+async def _startup_recovery() -> dict[str, dict[str, int]]:
+    """Resume the pipeline after a crash or dead-letter stall.
+
+    Runs before consumer loops start:
+    - reclaim in-flight messages stranded in processing lists by a crash
+    - requeue dead-lettered messages (consumers are idempotent)
+    """
+    from src.scheduler.queues import (
+        ALL_QUEUES,
+        NOTIFICATION_QUEUE,
+        dlq_depths,
+        push,
+        reclaim_processing,
+        requeue_dlq,
+        set_system_paused,
+    )
+
+    # A pause set without a TTL freezes everything forever; resume it so the
+    # pipeline starts moving again. Re-pause explicitly if still wanted.
+    if _env("RESUME_STUCK_PAUSE_ON_START", "1"):
+        try:
+            await set_system_paused(False)
+        except Exception as exc:
+            logger.warning("worker.recovery.unpause.error", error=str(exc))
+
+    requeue_enabled = _env("DLQ_AUTO_REQUEUE", "1")
+
+    depths = await dlq_depths()
+    summary: dict[str, dict[str, int]] = {}
+    for q in ALL_QUEUES:
+        reclaimed = 0
+        requeued = 0
+        try:
+            reclaimed = await reclaim_processing(q)
+        except Exception as exc:
+            logger.warning("worker.recovery.reclaim.error", queue=q, error=str(exc))
+        if requeue_enabled and depths.get(q):
+            try:
+                requeued = await requeue_dlq(q)
+            except Exception as exc:
+                logger.warning("worker.recovery.requeue.error", queue=q, error=str(exc))
+        if reclaimed or requeued:
+            summary[q] = {"reclaimed_processing": reclaimed, "requeued_dlq": requeued}
+
+    if summary:
+        logger.warning("worker.recovery.requeued", queues=summary)
+        try:
+            await push(
+                NOTIFICATION_QUEUE,
+                {"t
+ype": "pipeline_recovered", "detail": json.dumps(summary)},
+            )
+        except Exception:
+            pass
+    return summary
+
+
+async def _dlq_requeue_loop(stop_event: asyncio.Event) -> None:
+    """Periodically drain DLQs back into their queues.
+
+    Consumers are idempotent (applications resume from their current state,
+    discovery deduplicates, matching/LLM re-score harmlessly), so retries
+    are safe. This keeps the pipeline moving after transient failures.
+    """
+    from src.scheduler.queues import dlq_depths, requeue_dlq
+
+    interval = int(os.environ.get("DLQ_REQUEUE_INTERVAL_SECONDS", "900"))
+    while not stop_event.is_set():
+        try:
+            await asyncio.wait_for(stop_event.wait(), timeout=interval)
+            break
+        except asyncio.TimeoutError:
+            pass
+        if stop_event.is_set() or not _env("DLQ_AUTO_REQUEUE", "1"):
+            break
+        try:
+            depths = await dlq_depths()
+            for q, depth in depths.items():
+                moved = await requeue_dlq(q)
+                if moved:
+                    logger.warning(
+                        "worker.dlq_requeued", queue=q, moved=moved, remaining=depth - moved
+                    )
+        except Exception as exc:
+            logger.warning("worker.dlq_requeue.error", error=str(exc))
 
 
 async def _manual_review_promoter(stop_event: asyncio.Event) -> None:
@@ -92,11 +235,12 @@ async def _manual_review_promoter(stop_event: asyncio.Event) -> None:
     from src.database.session import get_session
     from src.scheduler.queues import BROWSER_QUEUE, push
 
-    interval = int(__import__("os").environ.get("MANUAL_REVIEW_PROMOTE_MINUTES", "30"))
-    max_age_hours = int(__import__("os").environ.get("MANUAL_REVIEW_PROMOTE_AFTER_HOURS", "2"))
+    interval = int(os.environ.get("MANUAL_REVIEW_PROMOTE_MINUTES", "30"))
+    max_age_hours = int(os.environ.get("MANUAL_REVIEW_PROMOTE_AFTER_HOURS", "2"))
     allowed_reasons = {
         "empty_cover_letter",
-        "evidence_validation_failed",
+   
+     "evidence_validation_failed",
         "evidence_soft_pass",
     }
 
@@ -119,11 +263,12 @@ async def _manual_review_promoter(stop_event: asyncio.Event) -> None:
                     reason = (app.failure_reason or "").strip()
                     created = app.created_at
                     if created is not None and created.tzinfo is None:
-     
-                   created = created.replace(tzinfo=timezone.utc)
+                        created = created.replace(tzinfo=timezone.utc)
                     if created is not None and created > cutoff:
                         continue
                     if reason and reason not in allowed_reasons:
+                        continue
+                    if not sm.can_transition(app.state, sm.SUBMISSION):
                         continue
                     await sm.advance(
                         app.id,
@@ -144,7 +289,8 @@ async def _manual_review_promoter(stop_event: asyncio.Event) -> None:
                         application_id=str(app.id),
                         reason=reason or "stale",
                     )
-        except Exception as exc:
+        excep
+t Exception as exc:
             logger.warning("worker.manual_review_promoter.error", error=str(exc))
 
 
@@ -175,7 +321,6 @@ async def _infra_keepalive_loop(stop_event: asyncio.Event) -> None:
                     hint="Redis asleep/unreachable; queues stall until it wakes",
                 )
             last_ok = ok
-        # Touch Postgres too so the pooler keeps it warm.
         if ok:
             try:
                 from sqlalchemy import text
@@ -195,16 +340,8 @@ async def _infra_keepalive_loop(stop_event: asyncio.Event) -> None:
 
 async def _dlq_watchdog(stop_event: asyncio.Event) -> None:
     """Scan DLQ keys periodically and emit structured counts."""
-    from src.scheduler.queues import get_redis
+    from src.scheduler.queues import dlq_depths
 
-    queues = (
-        "discovery_queue",
-        "analysis_queue",
-        "llm_queue",
-        "application_queue",
-        "browser_queue",
-        "notification_queue",
-    )
     while not stop_event.is_set():
         try:
             await asyncio.wait_for(stop_event.wait(), timeout=900)
@@ -214,15 +351,9 @@ async def _dlq_watchdog(stop_event: asyncio.Event) -> None:
         if stop_event.is_set():
             break
         try:
-            client = await get_redis()
-            counts = {}
-            for q in queues:
-                n = await client.llen(f"{q}:dlq")
-                if n:
-                    counts[q] = n
+            counts = await dlq_depths()
             if counts:
-                logger.warning("worker.dlq_depth", 
-counts=counts)
+                logger.warning("worker.dlq_depth", counts=counts)
             else:
                 logger.info("worker.dlq_depth", counts={})
         except Exception as exc:
@@ -234,18 +365,43 @@ async def main() -> None:
     configure_tracing(service_name="job-agent-worker")
     logger.info("worker.starting")
 
-    from src.candidate.profile.service import seed_from_json
-    from src.database.session import get_session
+    # Heavy imports happen AFTER logging is configured so that any
+    # import-time failure or hang is visible in the logs.
+    from apps.worker.discovery_worker import run_discovery_loops
+    from apps.worker.matching_worker import run_matching_loop
+    from apps.worker.llm_worker import run_llm_loop
+    from apps.worker.application_worker import run_application_loop
+    from apps.worker.browser_worker import run_browser_loop
+    from apps.worker.notification_worker import run_notification_loop
 
     try:
-        from src.database.bootstrap import ensure_schema
-
-        await ensure_schema()
-        async with get_session() as db:
-            await seed_from_json(db)
-        logger.info("worker.seed_ok")
+        await asyncio.wait_for(_startup_diag(), timeout=30)
     except Exception as exc:
-        logger.warning("worker.seed_failed", error=str(exc))
+        logger.error("worker.diag.failed", error=str(exc))
+
+    try:
+        from src.candidate.profile.service import seed_from_json
+        from src.database.session import get_session
+
+        try:
+            from src.database.bootstrap import ensure_schema
+
+            await asyncio.wait_for(ensure_schema(), timeout=90)
+            async with get_session() as db:
+                await seed_fro
+m_json(db)
+            logger.info("worker.seed_ok")
+        except Exception as exc:
+            logger.warning("worker.seed_failed", error=str(exc))
+    except Exception as exc:
+        logger.warning("worker.seed_import_failed", error=str(exc))
+
+    # Resume the pipeline before consumers start: clear a stuck pause,
+    # reclaim crashed in-flight messages, requeue dead letters.
+    try:
+        await asyncio.wait_for(_startup_recovery(), timeout=60)
+    except Exception as exc:
+        logger.warning("worker.startup_recovery.error", error=str(exc))
 
     loop = asyncio.get_running_loop()
     stop_event = asyncio.Event()
@@ -277,13 +433,13 @@ async def main() -> None:
     tasks.append(asyncio.create_task(_manual_review_promoter(stop_event), name="manual_review_promoter"))
     tasks.append(asyncio.create_task(_dlq_watchdog(stop_event), name="dlq_watchdog"))
     tasks.append(asyncio.create_task(_infra_keepalive_loop(stop_event), name="infra_keepalive"))
+    tasks.append(asyncio.create_task(_dlq_requeue_loop(stop_event), name="dlq_requeue"))
 
     await stop_event.wait()
 
     for t in tasks:
         t.cancel()
-    await asyncio.gather(*tasks, return_exceptions=Tr
-ue)
+    await asyncio.gather(*tasks, return_exceptions=True)
 
     await close_redis()
     await close_engine()
@@ -291,7 +447,14 @@ ue)
 
 
 if __name__ == "__main__":
-    try:
+    t
+ry:
         asyncio.run(main())
     except KeyboardInterrupt:
         sys.exit(0)
+    except BaseException:
+        # Last-resort: never die silently. Print the full traceback to
+        # stdout so the deploy log shows exactly what killed the process.
+        traceback.print_exc()
+        sys.stdout.flush()
+        raise
