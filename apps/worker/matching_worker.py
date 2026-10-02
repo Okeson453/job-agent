@@ -8,7 +8,7 @@ import uuid
 
 from sqlalchemy import select
 
-from src.candidate.profile.service import get_profile, load_min_match_score
+from src.candidate.profile.service import get_profile
 from src.database.session import get_session
 from src.jobs.job_state import set_job_state
 from src.jobs.matcher.deterministic import hard_filter_reason, score
@@ -28,7 +28,24 @@ from src.scheduler.queues import (
 logger = get_logger(__name__)
 
 _CONCURRENCY = int(os.environ.get("MATCHING_WORKER_CONCURRENCY", "5"))
-_THRESHOLD = int(os.environ.get("MATCH_THRESHOLD", str(load_min_match_score())))
+
+# Resolved lazily on first use: load_min_match_score() may touch the
+# profile/DB, which must never happen at import time (it can hang the
+# whole process before logging is configured).
+_THRESHOLD: int | None = None
+
+
+def _threshold() -> int:
+    global _THRESHOLD
+    if _THRESHOLD is None:
+        from src.candidate.profile.service import load_min_match_score
+
+        try:
+            default = str(load_min_match_score())
+        except Exception:
+            default = "40"
+        _THRESHOLD = int(os.environ.get("MATCH_THRESHOLD", default))
+    return _THRESHOLD
 
 
 async def _process(job_id: str) -> None:
@@ -66,11 +83,11 @@ async def _process(job_id: str) -> None:
                 job_id=job.id,
                 deterministic_score=deterministic,
                 match_score=deterministic,
-                recommendation="REVIEW" if deterministic >= _THRESHOLD else "REJECT",
+                recommendation="REVIEW" if deterministic >= _threshold() else "REJECT",
             )
             db.add(match_row)
 
-            if deterministic < _THRESHOLD:
+            if deterministic < _threshold():
                 set_job_state(job, "REJECTED_BY_FILTER", reason=f"score={deterministic}")
                 await db.commit()
                 logger.info("matching.rejected", job_id=job_id, score=deterministic)
