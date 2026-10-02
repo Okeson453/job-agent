@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import asyncio
+import json
+import os
 import signal
 import sys
 import time
@@ -25,11 +27,9 @@ logger = get_logger(__name__)
 TASK_TICKS: dict[str, float] = {}
 TASK_ALIVE: dict[str, bool] = {}
 
-
 def mark_tick(name: str) -> None:
     TASK_TICKS[name] = time.time()
     TASK_ALIVE[name] = True
-
 
 async def _supervise(
     name: str,
@@ -64,7 +64,6 @@ async def _supervise(
             backoff = 1.0
     TASK_ALIVE[name] = False
 
-
 async def _heartbeat_loop(stop_event: asyncio.Event) -> None:
     while not stop_event.is_set():
         alive = sum(1 for v in TASK_ALIVE.values() if v)
@@ -78,6 +77,99 @@ async def _heartbeat_loop(stop_event: asyncio.Event) -> None:
             break
         except asyncio.TimeoutError:
             continue
+
+async def _startup_recovery() -> dict[str, dict[str, int]]:
+    """Resume the pipeline after a crash or dead-letter stall.
+
+    Runs before consumer loops start:
+    - reclaim in-flight messages stranded in processing lists by a crash
+    - requeue dead-lettered messages (consumers are idempotent)
+    """
+    from src.scheduler.queues import (
+        ALL_QUEUES,
+        NOTIFICATION_QUEUE,
+        dlq_depths,
+        push,
+        reclaim_processing,
+        requeue_dlq,
+        set_system_paused,
+    )
+
+    # A pause set without a TTL freezes everything forever; resume it so the
+    # pipeline starts moving again. Re-pause explicitly if still wanted.
+    resume_paused = os.environ.get("RESUME_STUCK_PAUSE_ON_START", "1").lower() in (
+        "1", "true", "yes", "on",
+    )
+    if resume_paused:
+        try:
+            await set_system_paused(False)
+        except Exception as exc:
+            logger.warning("worker.recovery.unpause.error", error=str(exc))
+
+    requeue_enabled = os.environ.get("DLQ_AUTO_REQUEUE", "1").lower() in (
+        "1", "true", "yes", "on",
+    )
+
+    depths = await dlq_depths()
+    summary: dict[str, dict[str, int]] = {}
+    for q in ALL_QUEUES:
+        reclaimed = 0
+        requeued = 0
+        try:
+            reclaimed = await reclaim_processing(q)
+        except Exception as exc:
+            logger.warning("worker.recovery.reclaim.error", queue=q, error=str(exc))
+        if requeue_enabled and depths.get(q):
+            try:
+                requeued = await requeue_dlq(q)
+            except Exception as exc:
+                logger.warning("worker.recovery.requeue.error", queue=q, error=str(exc))
+        if reclaimed or requeued:
+            summary[q] = {"reclaimed_processing": reclaimed, "requeued_dlq": requeued}
+
+    if summary:
+        logger.warning("worker.recovery.requeued", queues=summary)
+        try:
+            await push(
+                NOTIFICATION_QUEUE,
+                {"type": "pipeline_recovered", "detail": json.dumps(summary)},
+            )
+        except Exception:
+            pass
+    return summary
+
+
+async def _dlq_requeue_loop(stop_event: asyncio.Event) -> None:
+    """Periodically drain DLQs back into their queues.
+
+    Consumers are idempotent (applications resume from their current state,
+    discovery deduplicates, matching/LLM re-score harmlessly), so retries
+    are safe. This keeps the pipeline moving after transient failures.
+    """
+    from src.scheduler.queues import ALL_QUEUES, dlq_depths, requeue_dlq
+
+    interval = int(os.environ.get("DLQ_REQUEUE_INTERVAL_SECONDS", "900"))
+    requeue_enabled = os.environ.get("DLQ_AUTO_REQUEUE", "1").lower() in (
+        "1", "true", "yes", "on",
+    )
+    while not stop_event.is_set():
+        try:
+            await asyncio.wait_for(stop_event.wait(), timeout=interval)
+            break
+        except asyncio.TimeoutError:
+            pass
+        if stop_event.is_set() or not requeue_enabled:
+            break
+        try:
+            depths = await dlq_depths()
+            for q, depth in depths.items():
+                moved = await requeue_dlq(q)
+                if moved:
+                    logger.warning(
+                        "worker.dlq_requeued", queue=q, moved=moved, remaining=depth - moved
+                    )
+        except Exception as exc:
+            logger.warning("worker.dlq_requeue.error", error=str(exc))
 
 
 async def _manual_review_promoter(stop_event: asyncio.Event) -> None:
@@ -123,6 +215,8 @@ async def _manual_review_promoter(stop_event: asyncio.Event) -> None:
                         continue
                     if reason and reason not in allowed_reasons:
                         continue
+                    if not sm.can_transition(app.state, sm.SUBMISSION):
+                        continue
                     await sm.advance(
                         app.id,
                         db,
@@ -148,16 +242,8 @@ async def _manual_review_promoter(stop_event: asyncio.Event) -> None:
 
 async def _dlq_watchdog(stop_event: asyncio.Event) -> None:
     """Scan DLQ keys periodically and emit structured counts."""
-    from src.scheduler.queues import get_redis
+    from src.scheduler.queues import dlq_depths
 
-    queues = (
-        "discovery_queue",
-        "analysis_queue",
-        "llm_queue",
-        "application_queue",
-        "browser_queue",
-        "notification_queue",
-    )
     while not stop_event.is_set():
         try:
             await asyncio.wait_for(stop_event.wait(), timeout=900)
@@ -167,12 +253,7 @@ async def _dlq_watchdog(stop_event: asyncio.Event) -> None:
         if stop_event.is_set():
             break
         try:
-            client = await get_redis()
-            counts = {}
-            for q in queues:
-                n = await client.llen(f"{q}:dlq")
-                if n:
-                    counts[q] = n
+            counts = await dlq_depths()
             if counts:
                 logger.warning("worker.dlq_depth", counts=counts)
             else:
@@ -198,6 +279,13 @@ async def main() -> None:
         logger.info("worker.seed_ok")
     except Exception as exc:
         logger.warning("worker.seed_failed", error=str(exc))
+
+    # Resume the pipeline before consumers start: clear a stuck pause,
+    # reclaim crashed in-flight messages, requeue dead letters.
+    try:
+        await _startup_recovery()
+    except Exception as exc:
+        logger.warning("worker.startup_recovery.error", error=str(exc))
 
     loop = asyncio.get_running_loop()
     stop_event = asyncio.Event()
@@ -228,6 +316,7 @@ async def main() -> None:
     tasks.append(asyncio.create_task(_heartbeat_loop(stop_event), name="heartbeat"))
     tasks.append(asyncio.create_task(_manual_review_promoter(stop_event), name="manual_review_promoter"))
     tasks.append(asyncio.create_task(_dlq_watchdog(stop_event), name="dlq_watchdog"))
+    tasks.append(asyncio.create_task(_dlq_requeue_loop(stop_event), name="dlq_requeue"))
 
     await stop_event.wait()
 

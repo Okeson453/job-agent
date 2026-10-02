@@ -71,6 +71,14 @@ def _format_failure(application_id: str, error: str | None) -> str:
     )
 
 
+def _format_recovered(detail: str | None) -> str:
+    return (
+        f"<b>PIPELINE RECOVERED</b>\n\n"
+        f"Stuck pause cleared, stranded messages reclaimed and dead letters requeued.\n"
+        f"Detail: <code>{detail or 'n/a'}</code>"
+    )
+
+
 async def _send_recorded(msg_type: str, text: str, meta: dict | None = None) -> None:
     status, err = "sent", None
     try:
@@ -119,6 +127,7 @@ async def _dispatch(payload: dict) -> None:
 
     if msg_type in ("approval_needed", "applying", "application_ready"):
         job, match = (None, None)
+
         if job_id:
             job, match = await _load_job_match(job_id)
         if job is not None:
@@ -155,10 +164,15 @@ async def _dispatch(payload: dict) -> None:
             msg_type, format_daily_stats(payload.get("stats") or {}), meta
         )
 
+    elif msg_type == "pipeline_recovered":
+        await _send_recorded(
+            msg_type, _format_recovered(payload.get("detail")), meta
+        )
+
     elif msg_type == "dlq_dead_letter":
         q = payload.get("queue", "?")
         attempts = payload.get("attempts", "?")
-        err = payload.get("last_error") or "unknown"
+        err = payload.get("error") or payload.get("last_error") or "unknown"
         text = (
             f"<b>DEAD LETTER</b>\n\n"
             f"Queue: <code>{q}</code>\n"
@@ -166,7 +180,6 @@ async def _dispatch(payload: dict) -> None:
             f"Error: {err}"
         )
         await _send_recorded(msg_type, text, meta)
-
     else:
         logger.warning("notification.unknown_type", type=msg_type)
 

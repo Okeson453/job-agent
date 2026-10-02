@@ -1,16 +1,16 @@
 """Durable-ish Redis queues with processing list, ack, retry, and DLQ.
-
 push → RPUSH to queue list
 pop → BLPOP + track in processing list with attempts
 ack → remove from processing
 nack → increment attempts; requeue or DLQ
+requeue_dlq → move dead-lettered items back onto the queue (attempts reset)
+reclaim_processing → return crashed in-flight items to their queue
 """
 
 from __future__ import annotations
 
 import json
 import os
-import time
 import uuid
 from typing import Any
 
@@ -25,7 +25,17 @@ APPLICATION_QUEUE = "application_queue"
 BROWSER_QUEUE = "browser_queue"
 NOTIFICATION_QUEUE = "notification_queue"
 
+ALL_QUEUES = (
+    DISCOVERY_QUEUE,
+    ANALYSIS_QUEUE,
+    LLM_QUEUE,
+    APPLICATION_QUEUE,
+    BROWSER_QUEUE,
+    NOTIFICATION_QUEUE,
+)
+
 _MAX_ATTEMPTS = 5
+_PAUSE_KEY = "system:paused"
 _redis = None
 
 
@@ -97,6 +107,7 @@ async def nack(message: dict[str, Any], *, error: str = "") -> None:
     client = await get_redis()
     payload = {k: v for k, v in message.items() if not k.startswith("_")}
     payload["_attempts"] = attempts
+    payload["last_error"] = error
     body = json.dumps({"id": env_id or str(uuid.uuid4()), "payload": payload, "attempts": attempts, "error": error})
     if env_id:
         await client.hdel(_processing_key(queue_name), env_id)
@@ -126,14 +137,81 @@ async def nack(message: dict[str, Any], *, error: str = "") -> None:
     logger.warning("queue.nack", queue=queue_name, attempts=attempts, error=error)
 
 
+async def requeue_dlq(queue_name: str, *, limit: int = 100) -> int:
+    """Move dead-lettered messages back onto *queue_name* with attempts reset.
+
+    Consumers are idempotent, so a requeued message is re-processed safely.
+    Returns the number of messages moved.
+    """
+    client = await get_redis()
+    moved = 0
+    while moved < limit:
+        body = await client.lpop(_dlq_key(queue_name))
+        if body is None:
+            break
+        try:
+            envelope = json.loads(body)
+            envelope["attempts"] = 0
+            payload = dict(envelope.get("payload") or {})
+            payload.pop("_attempts", None)
+            envelope["payload"] = payload
+            out = json.dumps(envelope)
+        except Exception:
+            out = json.dumps({"id": str(uuid.uuid4()), "payload": {}, "attempts": 0, "raw": body})
+        await client.rpush(queue_name, out)
+        moved += 1
+    if moved:
+        logger.warning("queue.dlq_requeued", queue=queue_name, moved=moved)
+    return moved
+
+
+async def reclaim_processing(queue_name: str) -> int:
+    """Return in-flight messages (pop'ed but never acked) to their queue.
+
+    Only safe before consumers start (e.g. worker startup after a crash).
+    Returns the number of messages reclaimed.
+    """
+    client = await get_redis()
+    entries = await client.hgetall(_processing_key(queue_name))
+    moved = 0
+    for env_id, body in entries.items():
+        await client.hdel(_processing_key(queue_name), env_id)
+        await client.rpush(queue_name, body)
+        moved += 1
+    if moved:
+        logger.warning("queue.processing_reclaimed", queue=queue_name, moved=moved)
+    return moved
+
+
+async def dlq_depths() -> dict[str, int]:
+    """Return non-zero DLQ depths for all queues."""
+    client = await get_redis()
+    depths: dict[str, int] = {}
+    for q in ALL_QUEUES:
+        n = await client.llen(_dlq_key(q))
+        if n:
+            depths[q] = n
+    return depths
+
+
 async def is_system_paused() -> bool:
     client = await get_redis()
-    value = await client.get("system:paused")
+    value = await client.get(_PAUSE_KEY)
     if value is None:
         return False
     if isinstance(value, bytes):
         value = value.decode()
-    return str(value).lower() in ("1", "true", "yes")
+    if str(value).lower() not in ("1", "true", "yes"):
+        return False
+    # A pause key set without a TTL would freeze the pipeline forever.
+    # Give it the default TTL so the system self-resumes.
+    ttl = await client.ttl(_PAUSE_KEY)
+    if ttl == -1:
+        default_ttl = int(os.environ.get("SYSTEM_PAUSE_TTL_SECONDS", "3600"))
+        if default_ttl > 0:
+            await client.expire(_PAUSE_KEY, default_ttl)
+            logger.warning("pause.key_no_ttl", applied_ttl=default_ttl)
+    return True
 
 
 async def set_system_paused(paused: bool, *, ttl_seconds: int | None = None) -> None:
@@ -148,8 +226,8 @@ async def set_system_paused(paused: bool, *, ttl_seconds: int | None = None) -> 
         if ttl is None:
             ttl = int(os.environ.get("SYSTEM_PAUSE_TTL_SECONDS", "3600"))
         if ttl and ttl > 0:
-            await client.set("system:paused", "1", ex=ttl)
+            await client.set(_PAUSE_KEY, "1", ex=ttl)
         else:
-            await client.set("system:paused", "1")
+            await client.set(_PAUSE_KEY, "1")
     else:
-        await client.delete("system:paused")
+        await client.delete(_PAUSE_KEY)
