@@ -65,6 +65,11 @@ _VALID_TRANSITIONS: dict[str, set[str]] = {
 }
 
 
+def can_transition(current: str, to_state: str) -> bool:
+    """Return True if current -> to_state is an allowed transition."""
+    return to_state in _VALID_TRANSITIONS.get(current, set())
+
+
 async def _record_event(
     db: AsyncSession,
     application_id: uuid.UUID,
@@ -104,8 +109,7 @@ async def advance(
         raise ValueError(f"Application {application_id} not found")
 
     current = app.state
-    allowed = _VALID_TRANSITIONS.get(current, set())
-    if to_state not in allowed:
+    if not can_transition(current, to_state):
         raise ValueError(
             f"Illegal transition {current} → {to_state} for application {application_id}"
         )
