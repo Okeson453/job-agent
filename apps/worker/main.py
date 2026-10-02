@@ -68,8 +68,7 @@ async def _supervise(
 
 
 async def _heartbeat_loop(stop_event: asyncio.Event) -> None:
-    """Fast first beat, t
-hen hourly. Guarantees logs are never empty."""
+    """Fast first beat, then hourly. Guarantees logs are never empty."""
     first = True
     while not stop_event.is_set():
         alive = sum(1 for v in TASK_ALIVE.values() if v)
@@ -126,8 +125,7 @@ async def _startup_diag() -> None:
         await asyncio.wait_for(client.ping(), timeout=10)
         logger.info("worker.diag.redis_ok", host=redis_host)
     except Exception as exc:
-        logger.error("worker.diag.redis_failed", host=redis_host,
- error=str(exc))
+        logger.error("worker.diag.redis_failed", host=redis_host, error=str(exc))
 
     try:
         depths = await asyncio.wait_for(dlq_depths(), timeout=10)
@@ -186,12 +184,55 @@ async def _startup_recovery() -> dict[str, dict[str, int]]:
         try:
             await push(
                 NOTIFICATION_QUEUE,
-                {"t
-ype": "pipeline_recovered", "detail": json.dumps(summary)},
+                {"type": "pipeline_recovered", "detail": json.dumps(summary)},
             )
         except Exception:
             pass
     return summary
+
+
+async def _infra_keepalive_loop(stop_event: asyncio.Event) -> None:
+    """Ping Redis (and Postgres) periodically.
+
+    Free-tier managed instances sleep when idle; periodic traffic is what
+    providers use to keep them awake, and repeated connection attempts are
+    what wake them up. This loop also logs connectivity state changes so
+    an asleep backend is visible instead of silent.
+    """
+    from src.scheduler.queues import redis_health
+
+    interval = int(os.environ.get("INFRA_KEEPALIVE_INTERVAL_SECONDS", "45"))
+    last_ok: bool | None = None
+    while not stop_event.is_set():
+        ok = False
+        try:
+            ok = await asyncio.wait_for(redis_health(), timeout=15)
+        except Exception:
+            ok = False
+        if ok != last_ok:
+            if ok:
+                logger.info("infra.redis_awake")
+            else:
+                logger.error(
+                    "infra.redis_unreachable",
+                    hint="Redis asleep/unreachable; queues stall until it wakes",
+                )
+            last_ok = ok
+        if ok:
+            try:
+                from sqlalchemy import text
+
+                from src.database.session import get_session
+
+                async with get_session() as db:
+                    await asyncio.wait_for(db.execute(text("SELECT 1")), timeout=10)
+            except Exception:
+                pass
+        try:
+            await asyncio.wait_for(stop_event.wait(), timeout=interval)
+            break
+        except asyncio.TimeoutError:
+            continue
 
 
 async def _dlq_requeue_loop(stop_event: asyncio.Event) -> None:
@@ -239,8 +280,7 @@ async def _manual_review_promoter(stop_event: asyncio.Event) -> None:
     max_age_hours = int(os.environ.get("MANUAL_REVIEW_PROMOTE_AFTER_HOURS", "2"))
     allowed_reasons = {
         "empty_cover_letter",
-   
-     "evidence_validation_failed",
+        "evidence_validation_failed",
         "evidence_soft_pass",
     }
 
@@ -289,53 +329,8 @@ async def _manual_review_promoter(stop_event: asyncio.Event) -> None:
                         application_id=str(app.id),
                         reason=reason or "stale",
                     )
-        excep
-t Exception as exc:
+        except Exception as exc:
             logger.warning("worker.manual_review_promoter.error", error=str(exc))
-
-
-async def _infra_keepalive_loop(stop_event: asyncio.Event) -> None:
-    """Ping Redis (and Postgres) periodically.
-
-    Free-tier managed instances sleep when idle; periodic traffic is what
-    providers use to keep them awake, and repeated connection attempts are
-    what wake them up. This loop also logs connectivity state changes so
-    an asleep backend is visible instead of silent.
-    """
-    from src.scheduler.queues import redis_health
-
-    interval = int(os.environ.get("INFRA_KEEPALIVE_INTERVAL_SECONDS", "45"))
-    last_ok: bool | None = None
-    while not stop_event.is_set():
-        ok = False
-        try:
-            ok = await asyncio.wait_for(redis_health(), timeout=15)
-        except Exception:
-            ok = False
-        if ok != last_ok:
-            if ok:
-                logger.info("infra.redis_awake")
-            else:
-                logger.error(
-                    "infra.redis_unreachable",
-                    hint="Redis asleep/unreachable; queues stall until it wakes",
-                )
-            last_ok = ok
-        if ok:
-            try:
-                from sqlalchemy import text
-
-                from src.database.session import get_session
-
-                async with get_session() as db:
-                    await asyncio.wait_for(db.execute(text("SELECT 1")), timeout=10)
-            except Exception:
-                pass
-        try:
-            await asyncio.wait_for(stop_event.wait(), timeout=interval)
-            break
-        except asyncio.TimeoutError:
-            continue
 
 
 async def _dlq_watchdog(stop_event: asyncio.Event) -> None:
@@ -388,8 +383,7 @@ async def main() -> None:
 
             await asyncio.wait_for(ensure_schema(), timeout=90)
             async with get_session() as db:
-                await seed_fro
-m_json(db)
+                await seed_from_json(db)
             logger.info("worker.seed_ok")
         except Exception as exc:
             logger.warning("worker.seed_failed", error=str(exc))
@@ -432,8 +426,8 @@ m_json(db)
     tasks.append(asyncio.create_task(_heartbeat_loop(stop_event), name="heartbeat"))
     tasks.append(asyncio.create_task(_manual_review_promoter(stop_event), name="manual_review_promoter"))
     tasks.append(asyncio.create_task(_dlq_watchdog(stop_event), name="dlq_watchdog"))
-    tasks.append(asyncio.create_task(_infra_keepalive_loop(stop_event), name="infra_keepalive"))
     tasks.append(asyncio.create_task(_dlq_requeue_loop(stop_event), name="dlq_requeue"))
+    tasks.append(asyncio.create_task(_infra_keepalive_loop(stop_event), name="infra_keepalive"))
 
     await stop_event.wait()
 
@@ -447,8 +441,7 @@ m_json(db)
 
 
 if __name__ == "__main__":
-    t
-ry:
+    try:
         asyncio.run(main())
     except KeyboardInterrupt:
         sys.exit(0)
