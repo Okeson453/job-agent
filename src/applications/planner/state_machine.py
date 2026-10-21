@@ -1,4 +1,9 @@
-"""Application decision engine (Section 8).
+"""Application tracking state machine (discovery-only pipeline).
+
+The system never submits applications. It discovers jobs, qualifies them,
+prepares documents (tailored CV / application email draft), and notifies
+the operator via Telegram. Applying is done manually by the operator;
+outcomes are reported back for tracking.
 
 Every module that changes an application's state does so by calling advance(),
 never by writing state= directly.
@@ -17,50 +22,48 @@ from src.observability.logging import get_logger
 
 logger = get_logger(__name__)
 
-# Canonical states from the design document.
+# Discovery pipeline states (system-driven).
 DISCOVERED = "DISCOVERED"
 NORMALIZED = "NORMALIZED"
 ELIGIBILITY_CHECK = "ELIGIBILITY_CHECK"
 MATCHED = "MATCHED"
 QUALIFIED = "QUALIFIED"
-APPLICATION_PREP = "APPLICATION_PREP"
-FACT_VALIDATION = "FACT_VALIDATION"
-READY = "READY"
-SUBMISSION = "SUBMISSION"
-SUBMITTED = "SUBMITTED"
+DOCUMENT_PREP = "DOCUMENT_PREP"
+NOTIFIED = "NOTIFIED"
+
+# Operator-driven outcome states (reported manually after applying).
+APPLIED = "APPLIED"
 INTERVIEW = "INTERVIEW"
 OFFER = "OFFER"
 EMPLOYER_REJECTED = "EMPLOYER_REJECTED"
+DISMISSED = "DISMISSED"
 
 # Failure / terminal states.
 REJECTED_BY_FILTER = "REJECTED_BY_FILTER"
 LOW_MATCH = "LOW_MATCH"
 MISSING_INFORMATION = "MISSING_INFORMATION"
-MANUAL_REVIEW = "MANUAL_REVIEW"
-SUBMISSION_FAILED = "SUBMISSION_FAILED"
+DOCUMENT_FAILED = "DOCUMENT_FAILED"
 DUPLICATE = "DUPLICATE"
-HUMAN_INTERVENTION_REQUIRED = "HUMAN_INTERVENTION_REQUIRED"
 
 _VALID_TRANSITIONS: dict[str, set[str]] = {
     DISCOVERED: {NORMALIZED, REJECTED_BY_FILTER, DUPLICATE},
     NORMALIZED: {ELIGIBILITY_CHECK, REJECTED_BY_FILTER},
     ELIGIBILITY_CHECK: {MATCHED, REJECTED_BY_FILTER},
     MATCHED: {QUALIFIED, LOW_MATCH, REJECTED_BY_FILTER},
-    QUALIFIED: {APPLICATION_PREP, MISSING_INFORMATION},
-    APPLICATION_PREP: {FACT_VALIDATION, MISSING_INFORMATION},
-    FACT_VALIDATION: {READY, MANUAL_REVIEW},
-    READY: {SUBMISSION, MANUAL_REVIEW},
-    SUBMISSION: {SUBMITTED, SUBMISSION_FAILED, HUMAN_INTERVENTION_REQUIRED},
-    SUBMITTED: {INTERVIEW, EMPLOYER_REJECTED, OFFER},
+    QUALIFIED: {DOCUMENT_PREP, MISSING_INFORMATION},
+    DOCUMENT_PREP: {NOTIFIED, MISSING_INFORMATION, DOCUMENT_FAILED},
+    # Documents may fail but the opportunity is still delivered without them.
+    DOCUMENT_FAILED: {DOCUMENT_PREP, NOTIFIED},
+    NOTIFIED: {APPLIED, DISMISSED},
+    APPLIED: {INTERVIEW, OFFER, EMPLOYER_REJECTED},
     INTERVIEW: {OFFER, EMPLOYER_REJECTED},
+    # Terminal states.
     OFFER: set(),
     EMPLOYER_REJECTED: set(),
+    DISMISSED: set(),
     REJECTED_BY_FILTER: set(),
     LOW_MATCH: set(),
     MISSING_INFORMATION: set(),
-    MANUAL_REVIEW: {READY, REJECTED_BY_FILTER, SUBMISSION},
-    SUBMISSION_FAILED: {SUBMISSION, MANUAL_REVIEW, HUMAN_INTERVENTION_REQUIRED},
-    HUMAN_INTERVENTION_REQUIRED: {SUBMISSION, MANUAL_REVIEW, REJECTED_BY_FILTER},
     DUPLICATE: set(),
 }
 
@@ -117,12 +120,10 @@ async def advance(
     app.state = to_state
     if extra:
         # Application columns that may be updated during a transition.
-        # Callers pass "metadata"; it is written to the ORM attribute metadata_.
         allowed_fields = {
             "cv_profile_name",
             "cover_letter",
             "failure_reason",
-            "screenshot_path",
             "mode",
             "metadata",
         }
@@ -156,7 +157,7 @@ async def create_application(
     db: AsyncSession,
     job_id: uuid.UUID,
     *,
-    mode: str = "APPROVAL",
+    mode: str = "NOTIFY_ONLY",
 ) -> Application:
     """Idempotent create: one application row per job_id."""
     result = await db.execute(select(Application).where(Application.job_id == job_id))

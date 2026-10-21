@@ -34,9 +34,8 @@ class Application(Base):
     state: Mapped[str] = mapped_column(String(32), nullable=False, default="DISCOVERED")
     cv_profile_name: Mapped[str | None] = mapped_column(String(64), nullable=True)
     cover_letter: Mapped[str | None] = mapped_column(Text, nullable=True)
-    mode: Mapped[str] = mapped_column(String(16), nullable=False, default="APPROVAL")
+    mode: Mapped[str] = mapped_column(String(16), nullable=False, default="NOTIFY_ONLY")
     failure_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
-    screenshot_path: Mapped[str | None] = mapped_column(String(512), nullable=True)
     metadata_: Mapped[dict[str, Any] | None] = mapped_column(
         "metadata", JSONB, nullable=True
     )
@@ -50,7 +49,10 @@ class Application(Base):
         nullable=False,
     )
 
-    submitted_at: Mapped[datetime | None] = mapped_column(
+    notified_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    applied_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
     interview_at: Mapped[datetime | None] = mapped_column(
@@ -69,25 +71,6 @@ class Application(Base):
         UniqueConstraint("job_id", name="uq_applications_job_id"),
     )
 
-
-class ApplicationAnswer(Base):
-    """Answer generated for a specific application question."""
-
-    __tablename__ = "application_answers"
-
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
-    application_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), nullable=False, index=True
-    )
-    question: Mapped[str] = mapped_column(Text, nullable=False)
-    answer: Mapped[str] = mapped_column(Text, nullable=False)
-    category: Mapped[str] = mapped_column(String(64), nullable=False)
-    validated: Mapped[bool] = mapped_column(default=False)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
 
 
 class ApplicationEvent(Base):

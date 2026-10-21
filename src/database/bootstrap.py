@@ -73,8 +73,6 @@ def _alembic_upgrade_head() -> None:
 
 
 async def _create_all() -> None:
-    import src.applications.automation_failures  # noqa: F401
-    import src.applications.browser.sessions_store  # noqa: F401
     import src.applications.models  # noqa: F401
     import src.candidate.models  # noqa: F401
     import src.jobs.models  # noqa: F401

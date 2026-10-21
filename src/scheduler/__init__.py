@@ -2,8 +2,7 @@
 
 from src.scheduler.queues import (
     ANALYSIS_QUEUE,
-    APPLICATION_QUEUE,
-    BROWSER_QUEUE,
+    DOCUMENT_QUEUE,
     DISCOVERY_QUEUE,
     LLM_QUEUE,
     NOTIFICATION_QUEUE,
@@ -19,8 +18,7 @@ from src.scheduler.queues import (
 
 __all__ = [
     "ANALYSIS_QUEUE",
-    "APPLICATION_QUEUE",
-    "BROWSER_QUEUE",
+    "DOCUMENT_QUEUE",
     "DISCOVERY_QUEUE",
     "LLM_QUEUE",
     "NOTIFICATION_QUEUE",

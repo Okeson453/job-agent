@@ -62,8 +62,7 @@ async def workers() -> dict:
             "discovery",
             "matching",
             "llm",
-            "application",
-            "browser",
+            "documents",
             "notification",
         ):
             raw = await client.get(f"worker:{name}:beat")
@@ -76,8 +75,7 @@ async def workers() -> dict:
             "discovery_queue",
             "analysis_queue",
             "llm_queue",
-            "application_queue",
-            "browser_queue",
+            "document_queue",
             "notification_queue",
         ):
             data["queues"][q] = await client.llen(q)

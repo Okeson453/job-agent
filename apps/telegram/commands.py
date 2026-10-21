@@ -13,7 +13,11 @@ from sqlalchemy import select
 
 from apps.telegram.formatters import format_daily_stats, format_job_card
 from src.applications.models import Application
-from src.applications.service import ApplicationActionError, approve_application, skip_application
+from src.applications.service import (
+    ApplicationActionError,
+    dismiss_application,
+    mark_applied,
+)
 from src.candidate.profile.service import get_profile
 from src.database.session import get_session
 from src.jobs.models import Job, JobMatch
@@ -45,15 +49,16 @@ async def cmd_pending(_args: str) -> str:
     async with get_session() as db:
         result = await db.execute(
             select(Application)
-            .where(Application.state.in_(["READY", "MANUAL_REVIEW"]))
+            .where(Application.state == "NOTIFIED")
             .order_by(Application.created_at.desc())
             .limit(10)
         )
         apps = result.scalars().all()
         if not apps:
-            return "No pending applications."
+            return "No opportunities awaiting your action."
         lines = [
-            f"<code>{a.id}</code> state={a.state} job={a.job_id}" for a in apps
+            f"<code>{a.id}</code> job={a.job_id} — /applied {a.id} or /dismiss {a.id}"
+            for a in apps
         ]
         return "\n".join(lines)
 
@@ -62,13 +67,13 @@ async def cmd_applied(_args: str) -> str:
     async with get_session() as db:
         result = await db.execute(
             select(Application)
-            .where(Application.state == "SUBMITTED")
+            .where(Application.state.in_(["APPLIED", "INTERVIEW", "OFFER"]))
             .order_by(Application.created_at.desc())
             .limit(10)
         )
         apps = result.scalars().all()
         if not apps:
-            return "No submitted applications."
+            return "No applications marked as applied."
         return "\n".join(f"<code>{a.id}</code> job={a.job_id}" for a in apps)
 
 
@@ -87,20 +92,20 @@ async def cmd_stats(_args: str) -> str:
             .select_from(Application)
             .where(Application.created_at >= since)
         )
-        apps_submitted = await db.scalar(
+        apps_notified = await db.scalar(
             select(func.count())
             .select_from(Application)
             .where(
                 Application.created_at >= since,
-                Application.state == "SUBMITTED",
+                Application.state.in_(["NOTIFIED", "APPLIED", "INTERVIEW", "OFFER"]),
             )
         )
-        failed = await db.scalar(
+        apps_applied = await db.scalar(
             select(func.count())
             .select_from(Application)
             .where(
                 Application.created_at >= since,
-                Application.state == "SUBMISSION_FAILED",
+                Application.state.in_(["APPLIED", "INTERVIEW", "OFFER"]),
             )
         )
         high_match = await db.scalar(
@@ -112,42 +117,43 @@ async def cmd_stats(_args: str) -> str:
         {
             "jobs_discovered": jobs_discovered or 0,
             "applications": apps_total or 0,
-            "submitted": apps_submitted or 0,
-            "failed": failed or 0,
+            "notified": apps_notified or 0,
+            "applied": apps_applied or 0,
             "high_match": high_match or 0,
         }
     )
 
 
-async def cmd_apply(args: str) -> str:
-    """Identical code path to POST /applications/{id}/approve."""
+async def cmd_applied_manual(args: str) -> str:
+    """Record manual application. Identical code path to POST /applications/{id}/applied."""
     raw = args.strip().split()[0] if args.strip() else ""
     try:
         application_id = uuid.UUID(raw)
     except ValueError:
-        return "Usage: /apply <application_id>"
+        return "Usage: /applied <application_id>"
 
     async with get_session() as db:
         try:
-            app = await approve_application(db, application_id)
+            app = await mark_applied(db, application_id)
         except ApplicationActionError as exc:
             return str(exc)
-        return f"Approved. Queued for submission: <code>{app.id}</code>"
+        return f"Marked as applied: <code>{app.id}</code>"
 
 
-async def cmd_skip(args: str) -> str:
+async def cmd_dismiss(args: str) -> str:
+    """Dismiss an opportunity. Identical code path to POST /applications/{id}/dismiss."""
     raw = args.strip().split()[0] if args.strip() else ""
     try:
         application_id = uuid.UUID(raw)
     except ValueError:
-        return "Usage: /skip <application_id>"
+        return "Usage: /dismiss <application_id>"
 
     async with get_session() as db:
         try:
-            app = await skip_application(db, application_id)
+            app = await dismiss_application(db, application_id)
         except ApplicationActionError as exc:
             return str(exc)
-        return f"Skipped: <code>{app.id}</code>"
+        return f"Dismissed: <code>{app.id}</code>"
 
 
 async def cmd_pause(_args: str) -> str:
@@ -192,7 +198,7 @@ async def cmd_rejected(_args: str) -> str:
             select(Application)
             .where(
                 Application.state.in_(
-                    ["REJECTED_BY_FILTER", "LOW_MATCH", "SUBMISSION_FAILED"]
+                    ["REJECTED_BY_FILTER", "LOW_MATCH", "DISMISSED", "EMPLOYER_REJECTED"]
                 )
             )
             .order_by(Application.created_at.desc())
@@ -243,8 +249,9 @@ HANDLERS: dict[str, Handler] = {
     "/interviews": cmd_interviews,
     "/rejected": cmd_rejected,
     "/stats": cmd_stats,
-    "/apply": cmd_apply,
-    "/skip": cmd_skip,
+    "/applied": cmd_applied_manual,
+    "/dismiss": cmd_dismiss,
+    "/skip": cmd_dismiss,
     "/pause": cmd_pause,
     "/resume": cmd_resume,
     "/profile": cmd_profile,

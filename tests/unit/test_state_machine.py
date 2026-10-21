@@ -3,69 +3,86 @@
 from __future__ import annotations
 
 from src.applications.planner.state_machine import (
-    APPLICATION_PREP,
+    APPLIED,
     DISCOVERED,
-    FACT_VALIDATION,
-    MANUAL_REVIEW,
+    DISMISSED,
+    DOCUMENT_FAILED,
+    DOCUMENT_PREP,
+    INTERVIEW,
+    LOW_MATCH,
     MATCHED,
+    MISSING_INFORMATION,
+    NOTIFIED,
+    OFFER,
     QUALIFIED,
-    READY,
     REJECTED_BY_FILTER,
-    SUBMISSION,
-    SUBMITTED,
-    SUBMISSION_FAILED,
     _VALID_TRANSITIONS,
+    can_transition,
     is_terminal,
 )
 
 
 class TestTransitionTable:
     def test_happy_path_reachable(self) -> None:
-        """DISCOVERED can reach SUBMITTED through the documented path."""
+        """DISCOVERED can reach NOTIFIED through the documented path."""
         path = [
             DISCOVERED,
             "NORMALIZED",
             "ELIGIBILITY_CHECK",
             MATCHED,
             QUALIFIED,
-            APPLICATION_PREP,
-            FACT_VALIDATION,
-            READY,
-            SUBMISSION,
-            SUBMITTED,
+            DOCUMENT_PREP,
+            NOTIFIED,
         ]
-        for i in range(len(path) - 1):
-            allowed = _VALID_TRANSITIONS.get(path[i], set())
-            assert path[i + 1] in allowed, f"{path[i]} → {path[i + 1]} not allowed"
+        for cur, nxt in zip(path, path[1:]):
+            assert can_transition(cur, nxt), f"{cur} → {nxt} must be legal"
 
-    def test_failure_states_terminal(self) -> None:
+    def test_notified_to_manual_outcomes(self) -> None:
+        assert can_transition(NOTIFIED, APPLIED)
+        assert can_transition(NOTIFIED, DISMISSED)
+
+    def test_applied_to_outcomes(self) -> None:
+        assert can_transition(APPLIED, INTERVIEW)
+        assert can_transition(APPLIED, OFFER)
+        assert can_transition(APPLIED, "EMPLOYER_REJECTED")
+
+    def test_interview_to_offer_or_reject(self) -> None:
+        assert can_transition(INTERVIEW, OFFER)
+        assert can_transition(INTERVIEW, "EMPLOYER_REJECTED")
+
+    def test_document_failed_can_retry_or_notify(self) -> None:
+        assert can_transition(DOCUMENT_FAILED, DOCUMENT_PREP)
+        assert can_transition(DOCUMENT_FAILED, NOTIFIED)
+
+    def test_failure_paths(self) -> None:
+        assert can_transition(DISCOVERED, REJECTED_BY_FILTER)
+        assert can_transition(MATCHED, LOW_MATCH)
+        assert can_transition(QUALIFIED, MISSING_INFORMATION)
+        assert can_transition(DOCUMENT_PREP, MISSING_INFORMATION)
+        assert can_transition(DOCUMENT_PREP, DOCUMENT_FAILED)
+
+    def test_terminal_states(self) -> None:
         for state in (
-            REJECTED_BY_FILTER,
-            "LOW_MATCH",
-            "MISSING_INFORMATION",
-            "DUPLICATE",
-            "OFFER",
+            OFFER,
             "EMPLOYER_REJECTED",
+            DISMISSED,
+            REJECTED_BY_FILTER,
+            LOW_MATCH,
+            MISSING_INFORMATION,
+            "DUPLICATE",
         ):
-            assert is_terminal(state), f"{state} should be terminal"
+            assert is_terminal(state), f"{state} must be terminal"
 
-    def test_submitted_can_progress_to_interview(self) -> None:
-        from src.applications.planner.state_machine import INTERVIEW
+    def test_pipeline_never_auto_submits(self) -> None:
+        """No state may transition into a submission state: they don't exist."""
+        for gone in ("SUBMISSION", "SUBMITTED", "SUBMISSION_FAILED", "READY", "MANUAL_REVIEW"):
+            assert gone not in _VALID_TRANSITIONS
+            for targets in _VALID_TRANSITIONS.values():
+                assert gone not in targets
 
-        assert INTERVIEW in _VALID_TRANSITIONS[SUBMITTED]
+    def test_notified_is_not_terminal(self) -> None:
+        assert not is_terminal(NOTIFIED)
 
-    def test_manual_review_can_recover(self) -> None:
-        allowed = _VALID_TRANSITIONS[MANUAL_REVIEW]
-        assert READY in allowed or SUBMISSION in allowed
-
-    def test_submission_failed_can_retry(self) -> None:
-        allowed = _VALID_TRANSITIONS[SUBMISSION_FAILED]
-        assert SUBMISSION in allowed or MANUAL_REVIEW in allowed
-
-    def test_no_skip_from_discovered_to_submitted(self) -> None:
-        assert SUBMITTED not in _VALID_TRANSITIONS[DISCOVERED]
-
-    def test_fact_validation_branches(self) -> None:
-        allowed = _VALID_TRANSITIONS[FACT_VALIDATION]
-        assert READY in allowed
-        assert MANUAL_REVIEW in allowed
+    def test_discovered_initial(self) -> None:
+        # Every application starts at DISCOVERED.
+        assert DISCOVERED in _VALID_TRANSITIONS

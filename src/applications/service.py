@@ -1,12 +1,15 @@
 """Shared application actions used by the API and Telegram.
 
-Approve/skip/outcome updates go through the state machine here so handlers
-do not copy-paste transition logic.
+The system never submits applications. These actions cover operator
+decisions after a notification: mark as manually applied, dismiss, and
+report outcomes. All transitions go through the state machine here so
+handlers do not copy-paste transition logic.
 """
 
 from __future__ import annotations
 
 import uuid
+from datetime import datetime, timezone
 from typing import Literal
 
 from sqlalchemy import select
@@ -15,7 +18,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.applications.models import Application
 from src.applications.planner import state_machine as sm
 from src.observability.logging import get_logger
-from src.scheduler.queues import BROWSER_QUEUE, push
 
 logger = get_logger(__name__)
 
@@ -23,7 +25,7 @@ Outcome = Literal["INTERVIEW", "OFFER", "EMPLOYER_REJECTED"]
 
 
 class ApplicationActionError(ValueError):
-    """Raised when an approve/skip/outcome action is illegal."""
+    """Raised when an applied/dismiss/outcome action is illegal."""
 
 
 async def load_application(db: AsyncSession, application_id: uuid.UUID) -> Application:
@@ -36,68 +38,48 @@ async def load_application(db: AsyncSession, application_id: uuid.UUID) -> Appli
     return app
 
 
-async def approve_application(
+async def mark_applied(
     db: AsyncSession, application_id: uuid.UUID
 ) -> Application:
-    """READY or MANUAL_REVIEW → SUBMISSION, then enqueue browser work.
-
-    Idempotent: already in SUBMISSION/SUBMITTED is a no-op.
-
-    Ordering: flush state, push BROWSER_QUEUE, then commit. If the push fails,
-    roll back so the app stays READY/MANUAL_REVIEW and the operator can retry.
-    """
+    """NOTIFIED → APPLIED: the operator applied to this job manually."""
     app = await load_application(db, application_id)
-    if app.state in (sm.SUBMITTED, sm.SUBMISSION):
+    if app.state == sm.APPLIED:
         return app
-    if app.state not in (sm.READY, sm.MANUAL_REVIEW):
+    if app.state != sm.NOTIFIED:
         raise ApplicationActionError(
-            f"Cannot approve application in state {app.state}"
+            f"Cannot mark applied from state {app.state} (expected NOTIFIED)"
         )
     app = await sm.advance(
         application_id,
         db,
-        to_state=sm.SUBMISSION,
-        detail="operator_approve",
+        to_state=sm.APPLIED,
+        detail="operator_applied_manually",
     )
-    await db.flush()
-    try:
-        await push(
-            BROWSER_QUEUE,
-            {"application_id": str(app.id), "job_id": str(app.job_id)},
-        )
-    except Exception as exc:
-        await db.rollback()
-        logger.error(
-            "application.approve.dispatch_failed",
-            application_id=str(application_id),
-            error=str(exc),
-        )
-        raise ApplicationActionError(
-            f"Failed to enqueue submission: {exc}"
-        ) from exc
+    app.applied_at = datetime.now(timezone.utc)
     await db.commit()
     return app
 
 
-async def skip_application(
+async def dismiss_application(
     db: AsyncSession, application_id: uuid.UUID
 ) -> Application:
-    """Route an application to REJECTED_BY_FILTER via the state machine."""
+    """Route an application to DISMISSED via the state machine."""
     app = await load_application(db, application_id)
-    if app.state in (sm.REJECTED_BY_FILTER, sm.SUBMITTED):
+    if app.state in (sm.DISMISSED,):
         return app
 
-    if sm.REJECTED_BY_FILTER in sm._VALID_TRANSITIONS.get(app.state, set()):
+    if sm.DISMISSED in sm._VALID_TRANSITIONS.get(app.state, set()):
         app = await sm.advance(
             application_id,
             db,
-            to_state=sm.REJECTED_BY_FILTER,
-            detail="operator_skip",
+            to_state=sm.DISMISSED,
+            detail="operator_dismiss",
         )
         await db.commit()
         return app
 
-    app.state = sm.REJECTED_BY_FILTER
+    # Terminal outcome states cannot be dismissed.
+    app.state = sm.DISMISSED
     await db.commit()
     return app
 
@@ -106,7 +88,7 @@ async def record_outcome(
     db: AsyncSession, application_id: uuid.UUID, outcome: Outcome
 ) -> Application:
     app = await load_application(db, application_id)
-    if app.state not in (sm.SUBMITTED, sm.INTERVIEW):
+    if app.state not in (sm.APPLIED, sm.INTERVIEW):
         raise ApplicationActionError(
             f"Cannot record outcome from state {app.state}"
         )
@@ -116,5 +98,12 @@ async def record_outcome(
         to_state=outcome,
         detail="operator_outcome",
     )
+    now = datetime.now(timezone.utc)
+    if outcome == "INTERVIEW":
+        app.interview_at = now
+    elif outcome == "OFFER":
+        app.offer_at = now
+    else:
+        app.rejected_at = now
     await db.commit()
     return app

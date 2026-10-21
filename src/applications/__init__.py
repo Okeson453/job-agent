@@ -1,6 +1,6 @@
-"""Application generation, validation, browser automation, and submission."""
+"""Application tracking: discovery pipeline states and operator actions."""
 
 from src.applications.planner import state_machine as state_machine
-from src.applications.schemas import ApplicationRead, SubmissionResult
+from src.applications.schemas import ApplicationRead
 
-__all__ = ["ApplicationRead", "SubmissionResult", "state_machine"]
+__all__ = ["ApplicationRead", "state_machine"]

@@ -22,16 +22,14 @@ logger = get_logger(__name__)
 DISCOVERY_QUEUE = "discovery_queue"
 ANALYSIS_QUEUE = "analysis_queue"
 LLM_QUEUE = "llm_queue"
-APPLICATION_QUEUE = "application_queue"
-BROWSER_QUEUE = "browser_queue"
+DOCUMENT_QUEUE = "document_queue"
 NOTIFICATION_QUEUE = "notification_queue"
 
 ALL_QUEUES = (
     DISCOVERY_QUEUE,
     ANALYSIS_QUEUE,
     LLM_QUEUE,
-    APPLICATION_QUEUE,
-    BROWSER_QUEUE,
+    DOCUMENT_QUEUE,
     NOTIFICATION_QUEUE,
 )
 
@@ -102,9 +100,18 @@ async def close_redis() -> None:
         _redis = None
 
 
+def _envelope(payload: dict[str, Any]) -> dict[str, Any]:
+    """Wrap a payload in a delivery envelope (id + attempt counter)."""
+    return {
+        "id": str(uuid.uuid4()),
+        "payload": payload,
+        "attempts": int(payload.get("_attempts") or 0),
+    }
+
+
 async def push(queue_name: str, payload: dict[str, Any]) -> None:
     client = await get_redis()
-    body = json.dumps({"id": str(uuid.uuid4()), "payload": payload, "attempts": int(payload.get("_attempts") or 0)})
+    body = json.dumps(_envelope(payload))
     await client.rpush(queue_name, body)
 
 

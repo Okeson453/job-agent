@@ -1,4 +1,9 @@
-"""Application listing and approve/skip endpoints."""
+"""Application listing and operator action endpoints.
+
+The system never submits applications. Endpoints cover listing tracked
+opportunities and recording operator decisions: manually applied,
+dismissed, and post-application outcomes.
+"""
 
 from __future__ import annotations
 
@@ -13,9 +18,9 @@ from src.applications.models import Application
 from src.applications.schemas import ApplicationRead
 from src.applications.service import (
     ApplicationActionError,
-    approve_application as approve_svc,
+    dismiss_application as dismiss_svc,
+    mark_applied as mark_applied_svc,
     record_outcome,
-    skip_application as skip_svc,
 )
 
 router = APIRouter(prefix="/applications", tags=["applications"])
@@ -50,13 +55,14 @@ async def get_application(
     return ApplicationRead.model_validate(app)
 
 
-@router.post("/{application_id}/approve", response_model=ApplicationRead)
-async def approve_application(
+@router.post("/{application_id}/applied", response_model=ApplicationRead)
+async def applied(
     application_id: uuid.UUID,
     db: AsyncSession = Depends(get_db_session),
 ) -> ApplicationRead:
+    """Record that the operator applied to this job manually."""
     try:
-        app = await approve_svc(db, application_id)
+        app = await mark_applied_svc(db, application_id)
     except ApplicationActionError as exc:
         detail = str(exc)
         status = 404 if "not found" in detail.lower() else 409
@@ -64,13 +70,13 @@ async def approve_application(
     return ApplicationRead.model_validate(app)
 
 
-@router.post("/{application_id}/skip", response_model=ApplicationRead)
-async def skip_application(
+@router.post("/{application_id}/dismiss", response_model=ApplicationRead)
+async def dismiss(
     application_id: uuid.UUID,
     db: AsyncSession = Depends(get_db_session),
 ) -> ApplicationRead:
     try:
-        app = await skip_svc(db, application_id)
+        app = await dismiss_svc(db, application_id)
     except ApplicationActionError as exc:
         detail = str(exc)
         status = 404 if "not found" in detail.lower() else 409

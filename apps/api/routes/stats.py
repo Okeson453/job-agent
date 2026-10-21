@@ -37,17 +37,20 @@ async def daily_stats(
         .select_from(Application)
         .where(Application.created_at >= since)
     )
-    apps_submitted = await db.scalar(
-        select(func.count())
-        .select_from(Application)
-        .where(Application.created_at >= since, Application.state == "SUBMITTED")
-    )
-    apps_failed = await db.scalar(
+    apps_notified = await db.scalar(
         select(func.count())
         .select_from(Application)
         .where(
             Application.created_at >= since,
-            Application.state == "SUBMISSION_FAILED",
+            Application.state.in_(("NOTIFIED", "APPLIED", "INTERVIEW", "OFFER")),
+        )
+    )
+    apps_applied = await db.scalar(
+        select(func.count())
+        .select_from(Application)
+        .where(
+            Application.created_at >= since,
+            Application.state.in_(("APPLIED", "INTERVIEW", "OFFER")),
         )
     )
     apps_interview = await db.scalar(
@@ -76,21 +79,23 @@ async def daily_stats(
 
     jd = int(jobs_discovered or 0)
     at = int(apps_total or 0)
-    sub = int(apps_submitted or 0)
+    notif = int(apps_notified or 0)
+    appl = int(apps_applied or 0)
     resp = int(apps_responded or 0)
     iv = int(apps_interview or 0)
 
     return {
         "jobs_discovered": jd,
-        "applications": at,
-        "submitted": sub,
-        "failed": int(apps_failed or 0),
+        "opportunities_tracked": at,
+        "notified": notif,
+        "applied": appl,
         "interviews": iv,
         "offers": int(apps_offer or 0),
         "high_match": int(high_match or 0),
-        "application_rate": _rate(at, jd),
-        "response_rate": _rate(resp, sub),
-        "interview_rate": _rate(iv, sub),
+        "notification_rate": _rate(notif, jd),
+        "application_rate": _rate(appl, notif),
+        "response_rate": _rate(resp, appl),
+        "interview_rate": _rate(iv, appl),
     }
 
 
@@ -100,6 +105,7 @@ async def rates_stats(
 ) -> dict:
     daily = await daily_stats(db)
     return {
+        "notification_rate": daily["notification_rate"],
         "application_rate": daily["application_rate"],
         "response_rate": daily["response_rate"],
         "interview_rate": daily["interview_rate"],
@@ -122,12 +128,12 @@ async def source_stats(
     out = []
     for source, count in rows:
         job_ids = select(Job.id).where(Job.source == source, Job.discovered_at >= since)
-        submitted = await db.scalar(
+        applied = await db.scalar(
             select(func.count())
             .select_from(Application)
             .where(
                 Application.job_id.in_(job_ids),
-                Application.state == "SUBMITTED",
+                Application.state.in_(("APPLIED", "INTERVIEW", "OFFER")),
             )
         )
         interviews = await db.scalar(
@@ -142,8 +148,9 @@ async def source_stats(
             {
                 "source": source,
                 "count": count,
-                "source_conversion": _rate(submitted, count),
-                "interview_conversion": _rate(interviews, submitted),
+                "applied": applied,
+                "source_conversion": _rate(applied, count),
+                "interview_conversion": _rate(interviews, applied),
             }
         )
     return out

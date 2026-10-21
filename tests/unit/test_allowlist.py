@@ -9,7 +9,7 @@ os.environ["DATABASE_URL"] = "postgresql+asyncpg://x:x@localhost/x"
 os.environ["REDIS_URL"] = "redis://localhost:6379/0"
 os.environ["TELEGRAM_BOT_TOKEN"] = "t"
 os.environ["TELEGRAM_CHAT_ID"] = "0"
-os.environ["ENCRYPTION_KEY"] = "dGVzdC1lbmNyeXB0aW9uLWtleS0zMi1ieXRlcyEhIQ=="
+os.environ["ENCRYPTION_KEY"] = "dGVzdC1lbmNyeXB0aW9uLWtleS0zMi1ieXRlcyEhISE="
 os.environ["ALLOWED_DOMAINS"] = (
     "boards-api.greenhouse.io,boards.greenhouse.io,"
     "api.lever.co,jobs.lever.co,www.linkedin.com,www.indeed.com"

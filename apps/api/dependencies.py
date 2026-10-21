@@ -32,9 +32,9 @@ async def get_redis_dep():
 
 def get_current_config() -> dict[str, str]:
     return {
-        "application_mode": get_secret("APPLICATION_MODE_DEFAULT"),
         "match_threshold": get_secret("MATCH_THRESHOLD"),
-        "browser_concurrency": get_secret("BROWSER_WORKER_CONCURRENCY"),
+        "matching_concurrency": get_secret("MATCHING_WORKER_CONCURRENCY"),
+        "llm_concurrency": get_secret("LLM_WORKER_CONCURRENCY"),
     }
 
 

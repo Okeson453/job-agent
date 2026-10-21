@@ -21,7 +21,7 @@ from src.llm.retrieval.retriever import retrieve
 from src.observability.logging import get_logger
 from src.observability.tracing import span
 from src.scheduler.queues import (
-    APPLICATION_QUEUE,
+    DOCUMENT_QUEUE,
     LLM_QUEUE,
     ack,
     is_system_paused,
@@ -66,7 +66,7 @@ async def _promote(db, job, row, job_id: str, reason: str, score: int) -> None:
         row.recommendation = "QUALIFIED"
         row.match_score = score
     await db.commit()
-    await push(APPLICATION_QUEUE, {"job_id": job_id})
+    await push(DOCUMENT_QUEUE, {"job_id": job_id})
     logger.info("llm.qualified", job_id=job_id, reason=reason, score=score)
 
 

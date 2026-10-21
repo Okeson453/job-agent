@@ -1,4 +1,10 @@
-"""Notification worker: format, send, and persist Telegram messages."""
+"""Notification worker: format, send, and persist Telegram messages.
+
+Primary message type is "opportunity": a structured card for every
+qualified job delivered to the operator for manual review and action.
+The system never submits applications; notifications are the delivery
+endpoint of the pipeline.
+"""
 
 from __future__ import annotations
 
@@ -24,51 +30,90 @@ def _clip(text: str | None, n: int = 600) -> str:
     return text if len(text) <= n else text[: n - 1] + "…"
 
 
-def _format_apply_details(job: Job, match: JobMatch | None, application_id: str) -> str:
-    """Full-detail Telegram card for every job being applied to."""
+def _salary_text(job: Job) -> str:
+    if not (job.salary_min or job.salary_max):
+        return "n/a"
+    lo = job.salary_min or "?"
+    hi = job.salary_max or "?"
+    cur = job.salary_currency or ""
+    return f"{cur}{lo}–{hi}".strip()
+
+
+def _match_text(match: JobMatch | None) -> tuple[int, list, list]:
+    if match is None:
+        return 0, [], []
+    score = match.match_score or match.deterministic_score or 0
+    return score, list(match.strong_matches or []), list(match.gaps or [])
+
+
+def _format_opportunity(
+    job: Job,
+    match: JobMatch | None,
+    application_id: str,
+    cv_pdf: str | None = None,
+    cv_docx: str | None = None,
+    email_draft: str | None = None,
+) -> str:
+    """Full-detail Telegram card for a qualified opportunity."""
+    score, strong, gaps = _match_text(match)
     techs = ", ".join(job.technologies or []) or "n/a"
-    score = 0
-    if match is not None:
-        score = match.match_score or match.deterministic_score or 0
-    salary = "n/a"
-    if job.salary_min or job.salary_max:
-        lo = job.salary_min or "?"
-        hi = job.salary_max or "?"
-        salary = f"{lo}–{hi}"
     countries = ", ".join(job.countries or []) or "n/a"
-    return (
-        f"<b>APPLYING</b>\n\n"
-        f"<b>{job.title}</b>\n"
-        f"Company: {job.company}\n"
-        f"Employment: {job.employment_type or 'n/a'}\n"
-        f"Remote: {'Yes' if job.remote else 'No'} | Location: {job.location or 'n/a'}\n"
-        f"Countries: {countries}\n"
-        f"Seniority: {job.seniority or 'n/a'}\n"
-        f"Salary: {salary}\n"
-        f"Match: {score}%\n"
-        f"Stack: {techs}\n\n"
-        f"URL: {job.application_url or 'n/a'}\n\n"
-        f"<b>Description</b>\n{_clip(job.description, 800)}\n\n"
-        f"Application ID: <code>{application_id}</code>\n"
-        f"/apply {application_id}  ·  /skip {application_id}"
-    )
+    salary = _salary_text(job)
 
+    arrangement = "Remote" if job.remote else "On-site"
+    if "hybrid" in (job.location or "").lower():
+        arrangement = "Hybrid"
 
-def _format_review(application_id: str, job_title: str, reason: str | None = None) -> str:
-    return (
-        f"<b>MANUAL REVIEW NEEDED</b>\n\n"
-        f"Job: {job_title}\n"
-        f"Application: <code>{application_id}</code>\n"
-        f"Reason: {reason or 'evidence validation could not fully ground the generated content.'}"
-    )
+    lines = [
+        "<b>OPPORTUNITY</b>",
+        "",
+        f"<b>{job.title}</b>",
+        f"Company: {job.company}",
+        f"Seniority: {job.seniority or 'n/a'}",
+        f"Employment: {job.employment_type or 'n/a'} | {arrangement}",
+        f"Location: {job.location or 'n/a'}",
+        f"Geographic eligibility: {countries}",
+        f"Salary: {salary}",
+        f"Match: {score}%",
+        f"Stack: {techs}",
+        "",
+        f"URL: {job.application_url or 'n/a'}",
+    ]
 
+    if job.closing_date is not None:
+        lines.append(f"Deadline: {job.closing_date:%Y-%m-%d}")
 
-def _format_failure(application_id: str, error: str | None) -> str:
-    return (
-        f"<b>SUBMISSION FAILED</b>\n\n"
-        f"Application: <code>{application_id}</code>\n"
-        f"Reason: {error or 'unknown'}"
-    )
+    if strong:
+        lines.append("")
+        lines.append("<b>Alignment</b>")
+        lines.append(f"Strong: {', '.join(str(s)[:60] for s in strong[:6])}")
+
+    if gaps:
+        lines.append("")
+        lines.append("<b>Skill gaps</b>")
+        lines.append(f"{', '.join(str(g)[:60] for g in gaps[:6])}")
+
+    lines.append("")
+    lines.append(f"<b>Description</b>")
+    lines.append(_clip(job.description, 800))
+
+    if cv_pdf or cv_docx:
+        lines.append("")
+        lines.append("<b>Tailored CV</b>")
+        if cv_pdf:
+            lines.append(f"PDF: {cv_pdf}")
+        if cv_docx:
+            lines.append(f"DOCX: {cv_docx}")
+
+    if email_draft:
+        lines.append("")
+        lines.append("<b>Application email draft</b>")
+        lines.append(_clip(email_draft, 800))
+
+    lines.append("")
+    lines.append(f"Application ID: <code>{application_id}</code>")
+    lines.append(f"/applied {application_id}  ·  /dismiss {application_id}")
+    return "\n".join(lines)
 
 
 def _format_recovered(detail: str | None) -> str:
@@ -125,37 +170,26 @@ async def _dispatch(payload: dict) -> None:
         "type": msg_type,
     }
 
-    if msg_type in ("approval_needed", "applying", "application_ready"):
+    if msg_type == "opportunity":
         job, match = (None, None)
-
         if job_id:
             job, match = await _load_job_match(job_id)
         if job is not None:
-            text = _format_apply_details(job, match, application_id)
+            text = _format_opportunity(
+                job,
+                match,
+                application_id,
+                cv_pdf=payload.get("cv_pdf"),
+                cv_docx=payload.get("cv_docx"),
+                email_draft=payload.get("email_draft"),
+            )
             await _send_recorded(msg_type, text, meta)
         else:
             await _send_recorded(
                 msg_type,
-                f"<b>APPLYING</b>\nApplication: <code>{application_id}</code>\nJob id: {job_id}",
+                f"<b>OPPORTUNITY</b>\nApplication: <code>{application_id}</code>\nJob id: {job_id}",
                 meta,
             )
-
-    elif msg_type == "review_needed":
-        title = "unknown"
-        if job_id:
-            job, _ = await _load_job_match(job_id)
-            if job is not None:
-                title = job.title
-        await _send_recorded(
-            msg_type,
-            _format_review(application_id, title, payload.get("failure_reason")),
-            meta,
-        )
-
-    elif msg_type in ("submission_failed", "failure"):
-        await _send_recorded(
-            msg_type, _format_failure(application_id, payload.get("error")), meta
-        )
 
     elif msg_type == "daily_summary":
         from apps.telegram.formatters import format_daily_stats
