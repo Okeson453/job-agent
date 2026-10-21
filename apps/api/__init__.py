@@ -1,1 +1,0 @@
-"""FastAPI control surface process."""
