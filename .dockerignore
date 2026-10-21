@@ -1,0 +1,32 @@
+.git
+.gitignore
+.pytest_cache
+**/__pycache__
+**/*.pyc
+**/*.pyo
+.mypy_cache
+.ruff_cache
+.venv
+venv
+.env
+*.egg-info
+dist
+build
+tests
+scripts
+**/.gitkeep
+# Candidate scaffold is large; mount at runtime or bake selectively
+candidate/answer_bank
+candidate/projects
+candidate/research
+candidate/architecture
+candidate/evidence
+candidate/cover_letters
+# Keep identity/profile/skills/preferences for runtime seed if needed — still exclude bulky trees above
+*.md
+!README.md
+!candidate/README.md
+docker/*.md
+.github
+job-agent.zip
+*.zip
