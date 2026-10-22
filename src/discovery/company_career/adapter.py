@@ -10,7 +10,7 @@ from typing import Any
 from urllib.parse import urljoin
 
 import httpx
-from selectolax.parser import HTMLParser
+from src.discovery.html import HTMLParser
 
 from src.discovery.base import JobSource
 from src.discovery.browser_fetch import fetch_listing_html

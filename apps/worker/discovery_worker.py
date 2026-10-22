@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import os
 from typing import Any
 
 _SOURCE_BACKOFF: dict[str, float] = {}
@@ -27,6 +28,13 @@ from src.scheduler.queues import (
 )
 
 logger = get_logger(__name__)
+
+
+def _int_env(name: str, default: int) -> int:
+    try:
+        return max(1, int(os.environ.get(name, default)))
+    except ValueError:
+        return default
 
 
 def _requirements_from_job(job: Job) -> list[JobRequirement]:
@@ -138,10 +146,49 @@ async def _tick_source(source_name: str) -> None:
             logger.info("discovery.tick.empty", source=source_name)
             return
 
+        # Collect new records first so detail enrichment only runs for postings
+        # that are actually being stored. The per-tick cap drains large first
+        # runs over successive polls instead of hammering a source.
+        max_new = _int_env("DISCOVERY_MAX_NEW_PER_TICK", 25)
+        new_raws: list[dict[str, Any]] = []
+        async with get_session() as db:
+            for raw in raw_jobs:
+                if len(new_raws) >= max_new:
+                    break
+                try:
+                    job_create = normalize(source_name, raw)
+                except Exception as exc:
+                    logger.warning(
+                        "discovery.normalize.skip",
+                        source=source_name,
+                        error=str(exc),
+                    )
+                    continue
+                if await is_duplicate(job_create, db):
+                    continue
+                new_raws.append(raw)
+
+        if not new_raws:
+            logger.info("discovery.tick.complete", source=source_name, raw=len(raw_jobs), inserted=0)
+            return
+
+        enriched_raws = new_raws
+        try:
+            enriched = await asyncio.wait_for(adapter.enrich(new_raws), timeout=90)
+            if enriched:
+                enriched_raws = enriched
+        except Exception as exc:
+            logger.warning(
+                "discovery.enrich.failed",
+                source=source_name,
+                error=str(exc),
+                fallback="listing-level data",
+            )
+
         inserted_ids: list[str] = []
         async with get_session() as db:
             batch: list[Job] = []
-            for raw in raw_jobs:
+            for raw in enriched_raws:
                 try:
                     job_create = normalize(source_name, raw)
                 except Exception as exc:
@@ -171,6 +218,7 @@ async def _tick_source(source_name: str) -> None:
                     technologies=job_create.technologies,
                     seniority=job_create.seniority,
                     application_url=job_create.application_url,
+                    employer_apply_url=job_create.employer_apply_url,
                     state="DISCOVERED",
                     closing_date=job_create.closing_date,
                 )

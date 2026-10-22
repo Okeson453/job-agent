@@ -64,3 +64,12 @@ class JobSource(ABC):
         outbound HTTP.
         """
         ...
+
+    async def enrich(self, raws: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """Add detail-page fields for newly discovered records.
+
+        Called only for records that passed deduplication, so detail fetches
+        stay proportional to new postings rather than the whole listing.
+        Adapters that receive full data at listing time keep this default.
+        """
+        return raws

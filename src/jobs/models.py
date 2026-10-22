@@ -46,6 +46,7 @@ class Job(Base):
     technologies: Mapped[list[Any] | None] = mapped_column(JSONB, nullable=True)
     seniority: Mapped[str | None] = mapped_column(String(64), nullable=True)
     application_url: Mapped[str] = mapped_column(String(1024), nullable=False)
+    employer_apply_url: Mapped[str | None] = mapped_column(String(1024), nullable=True)
     state: Mapped[str] = mapped_column(String(32), nullable=False, default="DISCOVERED")
     discovered_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False

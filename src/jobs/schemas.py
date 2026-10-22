@@ -31,6 +31,7 @@ class JobCreate(BaseModel):
     technologies: list[str] | None = None
     seniority: str | None = None
     application_url: str
+    employer_apply_url: str | None = None
     closing_date: datetime | None = None
 
 
@@ -53,6 +54,7 @@ class JobRead(BaseModel):
     technologies: list[str] | None = None
     seniority: str | None = None
     application_url: str
+    employer_apply_url: str | None = None
     state: str
     discovered_at: datetime
     closing_date: datetime | None = None

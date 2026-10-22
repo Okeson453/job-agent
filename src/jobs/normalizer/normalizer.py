@@ -100,4 +100,5 @@ def normalize(source: str, raw: dict[str, Any]) -> JobCreate:
         seniority=seniority,
         technologies=technologies or None,
         application_url=application_url,
+        employer_apply_url=str(fields.get("employer_apply_url") or "").strip() or None,
     )

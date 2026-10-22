@@ -45,6 +45,14 @@ _BUILTIN_DISCOVERY_HOSTS: frozenset[str] = frozenset(
         "www.vercel.com",
         "www.cloudflare.com",
         "cloudflare.com",
+        # Primary IT/tech discovery sources.
+        "www.ioassociates.co.uk",
+        "ioassociates.co.uk",
+        "work.turing.com",
+        "www.micro1.ai",
+        "micro1.ai",
+        "expertwoka.com",
+        "www.expertwoka.com",
     }
 )
 
