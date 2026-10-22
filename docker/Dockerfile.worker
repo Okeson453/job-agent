@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends gcc \
 COPY pyproject.toml ./
 RUN mkdir -p apps src && touch apps/__init__.py src/__init__.py \
     && PIP_NO_CACHE_DIR=1 PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 \
-       pip install --no-cache-dir --prefix=/install ".[browser]"
+       pip install --no-cache-dir --prefix=/install ".[browser,docs]"
 
 FROM python:3.13-slim AS runtime
 
@@ -33,14 +33,24 @@ COPY apps ./apps
 COPY src ./src
 COPY alembic.ini pyproject.toml ./
 COPY cv ./cv
-# Slim candidate seed only (identity/profile/skills/preferences) — not answer_bank/projects
+# Candidate KB needed to tailor CVs. answer_bank/evidence stay out of the image.
 COPY candidate/identity ./candidate/identity
 COPY candidate/profile ./candidate/profile
 COPY candidate/skills ./candidate/skills
 COPY candidate/preferences ./candidate/preferences
 COPY candidate/metadata ./candidate/metadata
 COPY candidate/work_authorization ./candidate/work_authorization
+COPY candidate/experience ./candidate/experience
+COPY candidate/projects ./candidate/projects
+COPY candidate/education ./candidate/education
+COPY candidate/certifications ./candidate/certifications
+COPY candidate/achievements ./candidate/achievements
+COPY candidate/portfolio ./candidate/portfolio
+COPY candidate/availability ./candidate/availability
 COPY candidate/README.md ./candidate/README.md
+
+# Generated CVs are written here; mount a volume to keep them across deploys.
+RUN mkdir -p /app/data/generated_documents
 
 # Prefer headless shell (smaller); fall back to chromium-only (no --with-deps)
 RUN pip install --no-cache-dir "playwright>=1.49.0" \

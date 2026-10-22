@@ -20,6 +20,7 @@ from src.database.base import Base
 import src.candidate.models  # noqa: F401
 import src.jobs.models  # noqa: F401
 import src.applications.models  # noqa: F401
+import src.documents.models  # noqa: F401
 
 
 config = context.config

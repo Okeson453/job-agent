@@ -1,21 +1,18 @@
-"""Document worker: eligibility, document prep, and notification dispatch.
+"""Document worker: eligibility, tailored CV generation, and dispatch.
 
 Replaces the old application/browser workers. The system never submits
-applications: after the LLM qualifies a job, this worker creates the
-tracking record, runs the eligibility gate, prepares documents (tailored
-CV / application email — generation wired in the documents phase), marks
-the opportunity NOTIFIED, and enqueues the Telegram delivery.
-
-Phase note: document generation (CV/email) is not yet implemented here;
-this worker currently walks the pipeline and dispatches the opportunity
-notification. Generation slots into _prepare_documents().
+applications: after the LLM qualifies a job, this worker creates the tracking
+record, runs the eligibility gate, renders a job-specific CV (PDF + DOCX),
+marks the opportunity NOTIFIED, and enqueues the Telegram delivery.
 """
 
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import uuid
 from datetime import datetime, timezone
+from pathlib import Path
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -75,17 +72,88 @@ def _tick() -> None:
         pass
 
 
+_CV_MEDIA_TYPES = {
+    "pdf": "application/pdf",
+    "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+}
+
+
 async def _prepare_documents(
     db: AsyncSession, app: Application, job: Job
 ) -> dict[str, str | None]:
-    """Prepare the tailored CV and application email draft for a job.
+    """Generate the tailored CV and persist its file records.
 
-    Placeholder in this phase: returns document descriptors without
-    generating files. CV/email generation is wired here in the documents
-    phase; the notification layer treats missing documents gracefully.
+    Idempotent: an existing pair of files for this application is reused, so a
+    retried notification never produces a second CV. The tailoring plan is
+    stored on the application record to keep the job → assessment → CV chain
+    auditable.
     """
-    # Intentional no-op placeholder (documents phase implements generation).
-    return {"cv_pdf": None, "cv_docx": None, "email_draft": None}
+    from src.documents.generator import generate_cv
+    from src.documents.kb import load_kb
+    from src.documents.models import GeneratedDocument
+    from src.documents.tailoring import build_plan
+
+    existing = (
+        await db.execute(
+            select(GeneratedDocument).where(
+                GeneratedDocument.application_id == app.id,
+                GeneratedDocument.kind == "cv",
+            )
+        )
+    ).scalars().all()
+    by_format = {row.format: row for row in existing}
+    if {"pdf", "docx"} <= by_format.keys() and all(
+        Path(row.path).exists() for row in by_format.values()
+    ):
+        logger.info(
+            "documents.cv.reused",
+            job_id=str(job.id),
+            application_id=str(app.id),
+        )
+        return {
+            "cv_pdf": by_format["pdf"].path,
+            "cv_docx": by_format["docx"].path,
+            "email_draft": None,
+        }
+
+    kb = load_kb()
+    plan = await build_plan(job, kb)
+    artifact = await asyncio.to_thread(generate_cv, job, kb, plan)
+
+    app.metadata_ = {**(app.metadata_ or {}), "cv_plan": plan.model_dump()}
+
+    for fmt, path in (("pdf", artifact.pdf_path), ("docx", artifact.docx_path)):
+        payload = await asyncio.to_thread(path.read_bytes)
+        digest = hashlib.sha256(payload).hexdigest()
+        row = by_format.get(fmt)
+        if row is None:
+            row = GeneratedDocument(
+                application_id=app.id,
+                job_id=job.id,
+                kind="cv",
+                format=fmt,
+            )
+            db.add(row)
+        row.filename = path.name
+        row.path = str(path)
+        row.mime_type = _CV_MEDIA_TYPES[fmt]
+        row.size_bytes = len(payload)
+        row.sha256 = digest
+        # Regenerated content has not been delivered yet.
+        row.sent_at = None
+
+    await db.flush()
+    logger.info(
+        "documents.cv.generated",
+        job_id=str(job.id),
+        application_id=str(app.id),
+        filename=artifact.filename_base,
+    )
+    return {
+        "cv_pdf": str(artifact.pdf_path),
+        "cv_docx": str(artifact.docx_path),
+        "email_draft": None,
+    }
 
 
 async def _process(job_id: str) -> None:
