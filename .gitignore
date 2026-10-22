@@ -11,3 +11,6 @@ artifacts/browser/
 .mypy_cache/
 .ruff_cache/
 *.log
+
+# Generated CVs and other runtime output
+data/

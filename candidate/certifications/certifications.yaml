@@ -1,2 +1,3 @@
+# Confirmed by the candidate on 2026-10-22: no certifications held.
+# The CV generator omits the section entirely while this stays empty.
 certifications: []
-# TODO each: {name, issuer, date_earned, expires, credential_id, credential_url}

@@ -1,6 +1,6 @@
 degrees:
   - degree: "Bachelor's Degree — Industrial Chemistry"
     institution: "Kogi State University"
-    start_year: null       # TODO — populate from actual records
-    end_year: null         # TODO — expected completion, populate from actual records
-    status: "in-progress"  # 400L / final year
+    start_year: null       # unverified — do not guess
+    end_year: null         # unverified — do not guess
+    status: "in-progress"  # confirmed 2026-10-22: still enrolled, final year
