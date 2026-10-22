@@ -80,79 +80,122 @@ _CV_MEDIA_TYPES = {
 
 async def _prepare_documents(
     db: AsyncSession, app: Application, job: Job
-) -> dict[str, str | None]:
-    """Generate the tailored CV and persist its file records.
+) -> dict[str, object]:
+    """Generate the tailored CV, the email draft, and persist their records.
 
-    Idempotent: an existing pair of files for this application is reused, so a
-    retried notification never produces a second CV. The tailoring plan is
-    stored on the application record to keep the job → assessment → CV chain
-    auditable.
+    Idempotent: files already recorded for this application are reused, so a
+    retried notification never produces a second CV or a duplicate draft. The
+    tailoring plan and the email draft are stored on the application record to
+    keep the job → assessment → documents chain auditable.
     """
+    from src.documents.email import draft_application_email, write_email_file
     from src.documents.generator import generate_cv
     from src.documents.kb import load_kb
     from src.documents.models import GeneratedDocument
     from src.documents.tailoring import build_plan
 
-    existing = (
+    rows = (
         await db.execute(
             select(GeneratedDocument).where(
-                GeneratedDocument.application_id == app.id,
-                GeneratedDocument.kind == "cv",
+                GeneratedDocument.application_id == app.id
             )
         )
     ).scalars().all()
-    by_format = {row.format: row for row in existing}
-    if {"pdf", "docx"} <= by_format.keys() and all(
-        Path(row.path).exists() for row in by_format.values()
-    ):
+    cv_rows = {row.format: row for row in rows if row.kind == "cv"}
+    email_row = next((row for row in rows if row.kind == "email"), None)
+
+    cached_draft = (app.metadata_ or {}).get("email_draft")
+    cv_ready = {"pdf", "docx"} <= cv_rows.keys() and all(
+        Path(row.path).exists() for row in cv_rows.values()
+    )
+    email_ready = (
+        email_row is not None
+        and Path(email_row.path).exists()
+        and isinstance(cached_draft, dict)
+        and bool(cached_draft.get("body"))
+    )
+    if cv_ready and (email_ready or not _email_enabled()):
         logger.info(
-            "documents.cv.reused",
+            "documents.reused",
             job_id=str(job.id),
             application_id=str(app.id),
         )
         return {
-            "cv_pdf": by_format["pdf"].path,
-            "cv_docx": by_format["docx"].path,
-            "email_draft": None,
+            "cv_pdf": cv_rows["pdf"].path,
+            "cv_docx": cv_rows["docx"].path,
+            "email_draft": cached_draft if email_ready else None,
         }
 
     kb = load_kb()
     plan = await build_plan(job, kb)
+    metadata = {**(app.metadata_ or {}), "cv_plan": plan.model_dump()}
+
     artifact = await asyncio.to_thread(generate_cv, job, kb, plan)
-
-    app.metadata_ = {**(app.metadata_ or {}), "cv_plan": plan.model_dump()}
-
     for fmt, path in (("pdf", artifact.pdf_path), ("docx", artifact.docx_path)):
         payload = await asyncio.to_thread(path.read_bytes)
-        digest = hashlib.sha256(payload).hexdigest()
-        row = by_format.get(fmt)
+        row = cv_rows.get(fmt)
         if row is None:
             row = GeneratedDocument(
-                application_id=app.id,
-                job_id=job.id,
-                kind="cv",
-                format=fmt,
+                application_id=app.id, job_id=job.id, kind="cv", format=fmt
             )
             db.add(row)
         row.filename = path.name
         row.path = str(path)
         row.mime_type = _CV_MEDIA_TYPES[fmt]
         row.size_bytes = len(payload)
-        row.sha256 = digest
+        row.sha256 = hashlib.sha256(payload).hexdigest()
         # Regenerated content has not been delivered yet.
         row.sent_at = None
 
+    email_draft: dict[str, str] | None = None
+    if _email_enabled():
+        draft = await draft_application_email(job, kb, plan)
+        if draft is not None:
+            txt_path = artifact.pdf_path.parent / f"{artifact.filename_base}-email.txt"
+            await asyncio.to_thread(write_email_file, draft, txt_path)
+            payload = await asyncio.to_thread(txt_path.read_bytes)
+            row = email_row
+            if row is None:
+                row = GeneratedDocument(
+                    application_id=app.id, job_id=job.id, kind="email", format="txt"
+                )
+                db.add(row)
+            row.filename = txt_path.name
+            row.path = str(txt_path)
+            row.mime_type = "text/plain"
+            row.size_bytes = len(payload)
+            row.sha256 = hashlib.sha256(payload).hexdigest()
+            row.sent_at = None
+            email_draft = {
+                "to": draft.to,
+                "subject": draft.subject,
+                "body": draft.body,
+            }
+            metadata["email_draft"] = email_draft
+
+    app.metadata_ = metadata
     await db.flush()
     logger.info(
-        "documents.cv.generated",
+        "documents.generated",
         job_id=str(job.id),
         application_id=str(app.id),
         filename=artifact.filename_base,
+        has_email=email_draft is not None,
     )
     return {
         "cv_pdf": str(artifact.pdf_path),
         "cv_docx": str(artifact.docx_path),
-        "email_draft": None,
+        "email_draft": email_draft,
+    }
+
+
+def _email_enabled() -> bool:
+    import os
+
+    return os.environ.get("APPLICATION_EMAIL_ENABLED", "1").lower() not in {
+        "0",
+        "false",
+        "no",
     }
 
 
@@ -207,7 +250,7 @@ async def _process(job_id: str) -> None:
 
             # Document preparation (CV / email draft). Failure is not fatal:
             # the opportunity is still delivered, flagged as doc-less.
-            docs: dict[str, str | None] = {
+            docs: dict[str, object] = {
                 "cv_pdf": None,
                 "cv_docx": None,
                 "email_draft": None,
