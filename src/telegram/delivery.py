@@ -5,8 +5,16 @@ from __future__ import annotations
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
-from sqlalchemy import select
+from sqlalchemy import (
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+    func,
+    select,
+)
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column
@@ -101,6 +109,43 @@ async def mark_sent(
     row.body_len = body_len
     row.attempts = (row.attempts or 0) + 1
     await db.flush()
+
+
+async def mark_skipped(
+    db: AsyncSession,
+    application_id: uuid.UUID | str,
+    part: str,
+    reason: str,
+) -> None:
+    """Record that a part was intentionally not sent (policy/config)."""
+    row = await _row(db, application_id, part)
+    if row is None:
+        row = NotificationDelivery(
+            application_id=uuid.UUID(str(application_id)), part=part
+        )
+        db.add(row)
+    row.status = "skipped"
+    row.error = reason[:1000]
+    await db.flush()
+
+
+async def count_sent_today(db: AsyncSession, part: str = PART_CARD) -> int:
+    """How many of ``part`` have already been delivered today (UTC)."""
+    start = datetime.now(timezone.utc).replace(
+        hour=0, minute=0, second=0, microsecond=0
+    )
+    total = (
+        await db.execute(
+            select(func.count())
+            .select_from(NotificationDelivery)
+            .where(
+                NotificationDelivery.part == part,
+                NotificationDelivery.status == "sent",
+                NotificationDelivery.created_at >= start,
+            )
+        )
+    ).scalar_one()
+    return int(total or 0)
 
 
 async def mark_failed(

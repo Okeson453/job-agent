@@ -7,7 +7,9 @@ calls inside score().
 from __future__ import annotations
 
 from src.candidate.schemas import CandidateProfile
+from src.config import Settings, get_settings, seniority_distance
 from src.jobs.models import Job
+from src.jobs.taxonomy import category_allowed, classify, detect_seniority
 
 # On-site / office signals — rejected when the role requires leaving home.
 _ONSITE_TOKENS = (
@@ -43,15 +45,34 @@ _REMOTE_TOKENS = (
 )
 
 
-def hard_filter_reason(job: Job) -> str | None:
-    """Return a rejection reason if the role cannot be done fully from home.
+def hard_filter_reason(
+    job: Job, settings: Settings | None = None
+) -> str | None:
+    """Return a rejection reason for policy exclusions.
 
-    Policy (operator-defined):
-    - Must be remote / work-from-home capable (no commuting to an office)
-    - Full-time remote is allowed
-    - Contract / freelance remote is allowed
-    - On-site and office-required hybrid roles are rejected
+    Policy is operator-configurable:
+    - ``REMOTE_MODE=remote_only`` (default): on-site / office-required roles
+      are rejected. ``prefer`` and ``any`` let them through; remote fit is
+      then expressed in the score instead.
+    - ``JOB_CATEGORIES``: when set, confidently classified roles outside the
+      selected categories are rejected. Titles that do not classify cleanly
+      are never dropped by this filter.
     """
+    cfg = settings or get_settings()
+
+    if cfg.remote_mode == "remote_only":
+        reason = _remote_rejection(job)
+        if reason:
+            return reason
+
+    category = classify(job)
+    if not category_allowed(category, cfg.job_categories):
+        return f"category_not_selected:{category}"
+
+    return None
+
+
+def _remote_rejection(job: Job) -> str | None:
     emp = (job.employment_type or "").lower()
     location = (job.location or "").lower()
     blob = f"{job.title} {job.description or ''} {emp} {location}".lower()
@@ -137,15 +158,23 @@ def _score_remote(job: Job, profile: CandidateProfile) -> int:
     return 0
 
 
-def _score_nigeria(job: Job, profile: CandidateProfile) -> int:
-    if not profile.nigeria_eligible:
-        return 0
-    countries = [c.lower() for c in (job.countries or [])]
+def _score_geo(
+    job: Job, profile: CandidateProfile, settings: Settings
+) -> int:
+    """Score geographic fit against the operator's preferred countries."""
+    if not settings.preferred_countries:
+        return NIGERIA_ELIGIBLE if job.remote else 0
+
+    countries = [str(c).lower() for c in (job.countries or [])]
     location = (job.location or "").lower()
-    if "nigeria" in countries or "nigeria" in location or "ng" in countries:
+    worldwide = any(token in location for token in ("worldwide", "anywhere", "global"))
+
+    if any(pref in countries or pref in location for pref in settings.preferred_countries):
         return NIGERIA_ELIGIBLE
-    if job.remote:
+    if job.remote and (worldwide or settings.allow_worldwide_remote):
         return NIGERIA_ELIGIBLE
+    if job.remote and profile.remote_ok:
+        return NIGERIA_ELIGIBLE // 2
     return 0
 
 
@@ -201,32 +230,53 @@ def _score_domain(job: Job, profile: CandidateProfile) -> int:
     return 0
 
 
-def _score_salary(job: Job, profile: CandidateProfile) -> int:
-    if profile.min_salary is None:
+def _score_salary(
+    job: Job, profile: CandidateProfile, settings: Settings
+) -> int:
+    minimum = profile.min_salary if profile.min_salary is not None else settings.min_salary
+    if minimum is None:
         return SALARY_ACCEPTABLE
-    if job.salary_max is not None and job.salary_max < profile.min_salary:
+    if job.salary_max is not None and job.salary_max < minimum:
         return 0
-    if job.salary_min is not None and job.salary_min >= profile.min_salary:
+    if job.salary_min is not None and job.salary_min >= minimum:
         return SALARY_ACCEPTABLE
     return SALARY_ACCEPTABLE // 2
 
 
-def _score_seniority(job: Job, profile: CandidateProfile) -> int:
-    seniority = (job.seniority or "").lower()
-    if seniority in ("intern", "junior", "entry"):
-        return 0
-    return SENIORITY_APPROPRIATE
+def _score_seniority(
+    job: Job, profile: CandidateProfile, settings: Settings
+) -> int:
+    """Seniority is a ranking signal, never an exclusion.
+
+    Exact target-level matches score full points; adjacent levels score
+    partial; far levels still score something so a strong stack match can
+    still surface a role the operator may want to see.
+    """
+    level = detect_seniority(job)
+    distance = seniority_distance(level, settings.target_seniority)
+    if distance is None:
+        return SENIORITY_APPROPRIATE // 2
+    if distance == 0:
+        return SENIORITY_APPROPRIATE
+    if distance == 1:
+        return max(1, (SENIORITY_APPROPRIATE * 3) // 5)
+    return 1
 
 
-def score(job: Job, candidate_profile: CandidateProfile) -> int:
+def score(
+    job: Job,
+    candidate_profile: CandidateProfile,
+    settings: Settings | None = None,
+) -> int:
     """Return 0–100 deterministic match score."""
+    cfg = settings or get_settings()
     total = 0
     total += _score_remote(job, candidate_profile)
-    total += _score_nigeria(job, candidate_profile)
+    total += _score_geo(job, candidate_profile, cfg)
     total += _score_stack(job, candidate_profile)
     total += _score_role(job, candidate_profile)
     total += _score_experience(job, candidate_profile)
     total += _score_domain(job, candidate_profile)
-    total += _score_salary(job, candidate_profile)
-    total += _score_seniority(job, candidate_profile)
+    total += _score_salary(job, candidate_profile, cfg)
+    total += _score_seniority(job, candidate_profile, cfg)
     return min(total, MAXIMUM)

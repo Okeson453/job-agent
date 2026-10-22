@@ -18,6 +18,7 @@ from pathlib import Path
 
 from sqlalchemy import select
 
+from src.config import get_settings
 from src.database.session import get_session
 from src.jobs.models import Job, JobMatch
 from src.observability.logging import get_logger
@@ -27,9 +28,11 @@ from src.telegram.delivery import (
     PART_CV_DOCX,
     PART_CV_PDF,
     PART_EMAIL,
+    count_sent_today,
     delivered_parts,
     mark_failed,
     mark_sent,
+    mark_skipped,
 )
 from src.telegram.notifier import send_document, send_message
 from src.telegram.notifications_store import record_notification
@@ -262,13 +265,40 @@ async def _send_opportunity(payload: dict[str, Any]) -> None:
         )
         raise RuntimeError(f"job {job_id} not found")
 
+    cfg = get_settings()
+
     async with get_session() as db:
         done = await delivered_parts(db, application_id)
+        if PART_CARD not in done:
+            score, _, _ = _match_text(match)
+            if cfg.notify_min_score and score < cfg.notify_min_score:
+                await mark_skipped(
+                    db, application_id, PART_CARD, f"below_notify_score:{score}"
+                )
+                await db.commit()
+                logger.info(
+                    "notification.suppressed.low_score",
+                    application_id=application_id,
+                    score=score,
+                    threshold=cfg.notify_min_score,
+                )
+                return
+            if cfg.notify_daily_cap:
+                already = await count_sent_today(db)
+                if already >= cfg.notify_daily_cap:
+                    await mark_skipped(db, application_id, PART_CARD, "daily_cap")
+                    await db.commit()
+                    logger.info(
+                        "notification.suppressed.daily_cap",
+                        application_id=application_id,
+                        cap=cfg.notify_daily_cap,
+                    )
+                    return
 
-    cv_pdf = payload.get("cv_pdf")
-    cv_docx = payload.get("cv_docx")
+    cv_pdf = payload.get("cv_pdf") if cfg.notify_attachments else None
+    cv_docx = payload.get("cv_docx") if cfg.notify_attachments else None
     email_draft = payload.get("email_draft")
-    if not isinstance(email_draft, dict):
+    if not isinstance(email_draft, dict) or not cfg.notify_email_drafts:
         email_draft = None
 
     if PART_CARD not in done:
